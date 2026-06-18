@@ -31,6 +31,10 @@ function Municipality() {
   const [meterSearch, setMeterSearch] = useState("");
   const [meterStatusFilter, setMeterStatusFilter] = useState("all");
   const meterSectionRef = useRef<HTMLDivElement>(null);
+  const alertLogRef = useRef<HTMLDivElement>(null);
+
+  const scrollToAlertLog = () =>
+    alertLogRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   const handleDispatchAll = () => {
     setMeterStatusFilter("critical");
@@ -43,7 +47,7 @@ function Municipality() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <KPI label="Meters online" value={`${online} / ${meters.length}`} icon={Wifi} accent="text-[#005EB8]" />
-        <KPI label="Active tamper alerts" value={String(withTamper)} icon={AlertCircle} accent="text-red-600" />
+        <KPI label="Active tamper alerts" value={String(withTamper)} icon={AlertCircle} accent="text-red-600" onAction={scrollToAlertLog} />
         <KPI label="Illegal connection suspects" value={String(illegal)} icon={Zap} accent="text-amber-600" sub="last 7 days" />
         <KPI label="Network kWh today" value={totalKWh.toFixed(1)} icon={Activity} sub="across all meters" />
         <KPI label="Revenue at risk" value={formatZAR(revenueAtRisk)} icon={DollarSign} accent="text-red-600" />
@@ -58,13 +62,18 @@ function Municipality() {
         />
       </div>
 
-      <AlertLog onDispatchAll={handleDispatchAll} />
+      <div ref={alertLogRef}>
+        <AlertLog onDispatchAll={handleDispatchAll} />
+      </div>
       <LoadSheddingControl />
     </div>
   );
 }
 
-function KPI({ label, value, icon: Icon, accent = "", sub }: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; accent?: string; sub?: string }) {
+function KPI({ label, value, icon: Icon, accent = "", sub, onAction }: {
+  label: string; value: string; icon: React.ComponentType<{ className?: string }>;
+  accent?: string; sub?: string; onAction?: () => void;
+}) {
   return (
     <Card>
       <div className="flex items-start justify-between">
@@ -73,6 +82,11 @@ function KPI({ label, value, icon: Icon, accent = "", sub }: { label: string; va
       </div>
       <div className={`mt-2 text-2xl font-bold font-mono ${accent}`}>{value}</div>
       {sub && <div className="text-[10px] text-slate-400 mt-1">{sub}</div>}
+      {onAction && (
+        <button onClick={onAction} className="mt-2 text-[10px] font-semibold text-[#005EB8] hover:underline">
+          View log →
+        </button>
+      )}
     </Card>
   );
 }
@@ -85,25 +99,25 @@ function NetworkMap() {
   return (
     <Card>
       <CardTitle hint="Connect Google Maps API key to enable live map">Network map — GPS meter locations</CardTitle>
-      <div className="relative bg-[#001F5E] rounded-xl overflow-hidden" style={{ height: 520 }}>
-        <svg viewBox="0 0 800 520" className="w-full h-full">
+      <div className="relative bg-[#001F5E] rounded-xl overflow-hidden" style={{ height: "calc(100dvh - 16rem)", minHeight: 300 }}>
+        <svg viewBox="0 0 800 600" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
           <defs>
             <pattern id="streets" width="80" height="60" patternUnits="userSpaceOnUse">
               <rect width="80" height="60" fill="#0B1628" />
               <rect x="2" y="2" width="76" height="56" fill="#112240" rx="2" />
             </pattern>
           </defs>
-          <rect width="800" height="520" fill="url(#streets)" />
+          <rect width="800" height="600" fill="url(#streets)" />
           {/* Roads */}
           <g stroke="#1A3458" strokeWidth="3">
-            <line x1="0" y1="150" x2="800" y2="150" />
-            <line x1="0" y1="370" x2="800" y2="370" />
-            <line x1="200" y1="0" x2="200" y2="520" />
-            <line x1="500" y1="0" x2="500" y2="520" />
+            <line x1="0" y1="160" x2="800" y2="160" />
+            <line x1="0" y1="400" x2="800" y2="400" />
+            <line x1="200" y1="0" x2="200" y2="600" />
+            <line x1="500" y1="0" x2="500" y2="600" />
           </g>
           {meters.map((m, i) => {
             const x = 60 + (i % 8) * 95 + (Math.sin(i) * 10);
-            const y = 60 + Math.floor(i / 8) * 120 + (Math.cos(i) * 10);
+            const y = 60 + Math.floor(i / 8) * 130 + (Math.cos(i) * 10);
             return (
               <g key={m.id}
                 onMouseEnter={() => setHover(m)} onMouseLeave={() => setHover(null)}
