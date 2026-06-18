@@ -19,20 +19,28 @@ export const Route = createFileRoute("/dashboard")({
 
 function ConsumerDashboard() {
   const todayKWh = useLiveData((s) => s.todayKWh);
-  const [alertVisible, setAlertVisible] = useState(true);
+  const costRand = useLiveData((s) => s.costRand);
+  const balanceRand = useLiveData((s) => s.balanceRand);
+  const runoutEta = useLiveData((s) => s.runoutEta);
+  const state = useLiveData((s) => s.state);
+  const watts = useLiveData((s) => s.current.watts);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Only show the alert banner when the live feed reports overuse.
+  const alertVisible = state === "alert" && !dismissed;
 
   return (
     <div className="space-y-4">
-      {alertVisible && <SmartMeterAlert onClose={() => setAlertVisible(false)} />}
-      <QuickStatsRow todayKWh={todayKWh} />
-      <UsageBreakdown todayKWh={todayKWh} />
+      {alertVisible && <SmartMeterAlert watts={watts} onClose={() => setDismissed(true)} />}
+      <QuickStatsRow todayKWh={todayKWh} costRand={costRand} balanceRand={balanceRand} runoutEta={runoutEta} />
+      <UsageBreakdown watts={watts} alert={state === "alert"} />
       <LoadSheddingCard />
     </div>
   );
 }
 
 /* ─── Smart Meter Alert Banner ─────────────────────────────── */
-function SmartMeterAlert({ onClose }: { onClose: () => void }) {
+function SmartMeterAlert({ watts, onClose }: { watts: number; onClose: () => void }) {
   return (
     <div className="bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 flex items-start gap-3">
       <div className="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center flex-shrink-0 mt-0.5">
@@ -44,11 +52,11 @@ function SmartMeterAlert({ onClose }: { onClose: () => void }) {
           <span className="text-[10px] text-white bg-amber-500 px-2 py-0.5 rounded-full font-semibold">Arduino · Live</span>
         </div>
         <p className="text-sm font-semibold text-amber-900 leading-snug">
-          Your <strong>geyser</strong> has used <strong>8.2 kWh</strong> today — estimated cost{" "}
-          <strong>R23.41</strong>. This is 40% above your daily average.
+          Your <strong>Kitchen</strong> is drawing <strong>{Math.round(watts).toLocaleString("en-ZA")} W</strong> right
+          now — above your safe threshold.
         </p>
         <p className="text-xs text-amber-700 mt-1">
-          Switch it off now to save money. Restart after loadshedding ends.
+          Turn it down or switch it off to save money and avoid tripping your supply.
         </p>
       </div>
       <button
@@ -63,7 +71,19 @@ function SmartMeterAlert({ onClose }: { onClose: () => void }) {
 }
 
 /* ─── 4-card quick stats row ──────────────────────────────── */
-function QuickStatsRow({ todayKWh }: { todayKWh: number }) {
+function QuickStatsRow({
+  todayKWh,
+  costRand,
+  balanceRand,
+  runoutEta,
+}: {
+  todayKWh: number;
+  costRand: number | null;
+  balanceRand: number | null;
+  runoutEta: string | null;
+}) {
+  // Prefer live bridge-derived cost; fall back to the local tariff estimate.
+  const cost = costRand ?? todayKWh * TARIFF_PER_KWH;
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {/* Units Used */}
@@ -85,9 +105,11 @@ function QuickStatsRow({ todayKWh }: { todayKWh: number }) {
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Est. Cost</span>
         </div>
         <div className="font-mono text-2xl font-bold text-amber-600 tabular-nums">
-          {formatZAR(todayKWh * TARIFF_PER_KWH)}
+          {formatZAR(cost)}
         </div>
-        <div className="text-[10px] text-slate-400 mt-1">Since midnight</div>
+        <div className="text-[10px] text-slate-400 mt-1">
+          {runoutEta && runoutEta !== "—" ? `Runs out ${runoutEta}` : "Since midnight"}
+        </div>
       </div>
 
       {/* Suggestions → reports */}
@@ -116,26 +138,28 @@ function QuickStatsRow({ todayKWh }: { todayKWh: number }) {
           <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">Buy</span>
         </div>
         <div className="text-2xl font-bold text-white">Units</div>
-        <div className="text-[10px] text-blue-200 mt-1">Add electricity</div>
+        <div className="text-[10px] text-blue-200 mt-1">
+          {balanceRand != null ? `Balance ${formatZAR(balanceRand)}` : "Add electricity"}
+        </div>
       </button>
     </div>
   );
 }
 
 /* ─── Live estimate (pie chart) ──────────────────────────── */
-function UsageBreakdown({ todayKWh }: { todayKWh: number }) {
+function UsageBreakdown({ watts, alert }: { watts: number; alert: boolean }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="font-bold text-slate-900">Where is your electricity going?</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Live estimate by appliance</p>
+          <p className="text-xs text-slate-400 mt-0.5">Live power draw by appliance</p>
         </div>
         <span className="text-xs bg-[#EBF5FF] text-[#005EB8] font-semibold px-2.5 py-1 rounded-full">
-          Live estimate
+          Live draw
         </span>
       </div>
-      <UsagePieChart totalKWh={todayKWh} />
+      <UsagePieChart kitchenWatts={watts} alert={alert} />
     </div>
   );
 }

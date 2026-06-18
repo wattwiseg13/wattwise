@@ -20,7 +20,7 @@ from bridge.protocol import is_overuse
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
 WATTS_THRESHOLD = 2000
-RATE_PER_KWH = 2.50
+RATE_PER_KWH = 2.85  # matches the frontend TARIFF_PER_KWH
 STARTING_BALANCE = 100.0
 PERIOD_S = 30  # one normal -> alert -> normal sweep takes this many seconds
 

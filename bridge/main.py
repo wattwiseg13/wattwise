@@ -22,7 +22,7 @@ BAUD = 9600
 MAX_SECONDS = 180        # 3-minute cap
 TICK_SECONDS = 15        # progress print interval
 WATTS_THRESHOLD = 2000   # alert when power draw goes above this (watts)
-DEVICE_LABEL = "kettle"  # friendly name used in the alert message
+DEVICE_LABEL = "Kitchen"  # friendly name used in the alert message (matches the dashboard appliance)
 DATA_DIR = "bridge/data"
 
 # Live data + heuristics
@@ -30,7 +30,7 @@ DATA_DIR = "bridge/data"
 # the LAN or a tunnel (ngrok) to connect. Override with env vars for deploys.
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))  # UI connects to ws://<host>:8765
-RATE_PER_KWH = 2.50      # flat prepaid tariff for the demo (Rand per kWh)
+RATE_PER_KWH = 2.85      # flat prepaid tariff for the demo (Rand per kWh; matches the frontend TARIFF_PER_KWH)
 STARTING_BALANCE = 100.0 # prepaid balance in Rand at the start of the demo
 
 

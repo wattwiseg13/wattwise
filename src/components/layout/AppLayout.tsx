@@ -184,9 +184,9 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
         {/* Footer */}
         <div className="px-3 py-3 border-t border-slate-100 space-y-1">
           <div className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg">
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
-            <span className={connected ? "text-emerald-600 font-medium" : "text-red-500 font-medium"}>
-              {connected ? "Live · Serial bridge" : "Disconnected"}
+            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-pulse"}`} />
+            <span className={connected ? "text-emerald-600 font-medium" : "text-amber-600 font-medium"}>
+              {connected ? "Live · Serial bridge" : "Demo data · bridge offline"}
             </span>
           </div>
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-50 group">
