@@ -1,10 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardTitle } from "@/components/ui/card-basic";
-import { useState } from "react";
-import { FileText, Zap, Activity, Download, Loader2, Lightbulb, Thermometer, TrendingDown, Tv } from "lucide-react";
+import { FileText, Zap, Activity, Download } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({ meta: [{ title: "Reports · WattWise" }] }),
@@ -16,91 +14,47 @@ export const Route = createFileRoute("/reports")({
 });
 
 const types = [
-  { id: "consumption", title: "Consumption report", desc: "kWh usage per meter, summarised by area and day.", Icon: Activity, formats: ["CSV", "PDF"] },
-  { id: "tamper", title: "Tamper report", desc: "Illegal connection alerts, dispatches, and resolutions.", Icon: Zap, formats: ["PDF"] },
-  { id: "loadshed", title: "Load-shedding impact", desc: "Downtime per area and affected consumers.", Icon: FileText, formats: ["PDF"] },
-];
-
-/* ─── Energy Suggestions ─────────────────────────────────── */
-const INSIGHTS = [
   {
-    Icon: Thermometer,
-    title: "Your geyser is your biggest cost",
-    detail: "Your geyser accounts for about 35% of your bill. Setting it to 55°C and using a timer could save you R150+ per month.",
-    saving: "Save R150/month",
-    color: "border-l-orange-400",
-    iconBg: "bg-orange-50",
-    iconColor: "text-orange-500",
+    id: "consumption",
+    title: "Consumption report",
+    desc: "kWh usage per meter, summarised by area and day.",
+    Icon: Activity,
+    files: [
+      { name: "Consumption_2025-12.csv", fmt: "CSV" },
+      { name: "Consumption_2025-12.pdf", fmt: "PDF" },
+    ],
   },
   {
+    id: "tamper",
+    title: "Tamper report",
+    desc: "Illegal connection alerts, dispatches, and resolutions.",
     Icon: Zap,
-    title: "Loadshedding prep saves money",
-    detail: "Switch on your geyser right after loadshedding ends, not 30 minutes before. This avoids the demand spike that costs extra.",
-    saving: "Save R60/month",
-    color: "border-l-[#005EB8]",
-    iconBg: "bg-[#EBF5FF]",
-    iconColor: "text-[#005EB8]",
+    files: [
+      { name: "Tamper_Q4_2025.pdf", fmt: "PDF" },
+    ],
   },
   {
-    Icon: TrendingDown,
-    title: "You are using less than your neighbours",
-    detail: "Great news! You are using 12% less electricity than the average home in your area. Keep it up!",
-    saving: "You are already saving",
-    color: "border-l-emerald-400",
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
-  },
-  {
-    Icon: Tv,
-    title: "Standby power adds up",
-    detail: "Devices left on standby — TVs, decoders, chargers — can add R30–R50 per month to your bill without you noticing.",
-    saving: "Save R30–R50/month",
-    color: "border-l-slate-400",
-    iconBg: "bg-slate-50",
-    iconColor: "text-slate-600",
+    id: "loadshed",
+    title: "Load-shedding impact",
+    desc: "Downtime per area and affected consumers.",
+    Icon: FileText,
+    files: [
+      { name: "Loadshed_2025-12.pdf", fmt: "PDF" },
+    ],
   },
 ];
 
-function EnergySuggestions() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0" />
-        <div>
-          <h2 className="font-bold text-slate-900">Your energy saving suggestions</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Personalised tips based on your usage</p>
-        </div>
-      </div>
-      <div className="space-y-3">
-        {INSIGHTS.map(({ Icon, title, detail, saving, color, iconBg, iconColor }) => (
-          <div key={title} className={`border-l-4 ${color} bg-slate-50/60 rounded-r-xl p-4 flex gap-3`}>
-            <div className={`w-9 h-9 rounded-xl ${iconBg} grid place-items-center flex-shrink-0`}>
-              <Icon className={`w-4 h-4 ${iconColor}`} />
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold text-slate-800 text-sm">{title}</div>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{detail}</p>
-              <span className="inline-block mt-2 text-[11px] font-bold text-[#005EB8] bg-[#EBF5FF] px-2 py-0.5 rounded-full">{saving}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const saved = [
+  { name: "Consumption_2025-12.csv", type: "Consumption",   date: "2026-01-03", by: "Thandi Mokoena" },
+  { name: "Tamper_Q4_2025.pdf",      type: "Tamper",        date: "2026-01-02", by: "Thandi Mokoena" },
+  { name: "Loadshed_2025-12.pdf",    type: "Load-shedding", date: "2025-12-31", by: "System" },
+];
 
 function Reports() {
-  const [saved, setSaved] = useState([
-    { name: "Consumption_2025-12.csv", type: "Consumption", date: "2026-01-03", by: "Thandi Mokoena" },
-    { name: "Tamper_Q4_2025.pdf", type: "Tamper", date: "2026-01-02", by: "Thandi Mokoena" },
-    { name: "Loadshed_2025-12.pdf", type: "Load-shedding", date: "2025-12-31", by: "System" },
-  ]);
-
   return (
     <div className="space-y-6">
-      <EnergySuggestions />
       <div className="grid md:grid-cols-3 gap-4">
-        {types.map((t) => <ReportCard key={t.id} t={t} onGenerated={(name, type) => setSaved((s) => [{ name, type, date: format(new Date(), "yyyy-MM-dd"), by: "You" }, ...s])} />)}
+        {types.map((t) => <ReportCard key={t.id} t={t} />)}
       </div>
 
       <Card>
@@ -108,18 +62,29 @@ function Reports() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs min-w-[600px]">
             <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
-                <th className="py-2">Name</th><th>Type</th><th>Date</th><th>Generated by</th><th>Download</th>
+              <tr className="text-left text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                <th className="py-2">Name</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Generated by</th>
+                <th>Download</th>
               </tr>
             </thead>
             <tbody>
               {saved.map((r) => (
-                <tr key={r.name} className="border-b border-border last:border-0">
+                <tr key={r.name} className="border-b border-slate-100 last:border-0">
                   <td className="py-2.5 font-mono">{r.name}</td>
                   <td>{r.type}</td>
-                  <td className="text-muted-foreground">{r.date}</td>
+                  <td className="text-slate-400">{r.date}</td>
                   <td>{r.by}</td>
-                  <td><button onClick={() => toast.success(`Downloading ${r.name}…`)} className="text-[#005EB8] hover:underline inline-flex items-center gap-1"><Download className="w-3 h-3"/>Download</button></td>
+                  <td>
+                    <button
+                      onClick={() => toast.success(`Downloading ${r.name}…`)}
+                      className="text-[#005EB8] hover:underline inline-flex items-center gap-1"
+                    >
+                      <Download className="w-3 h-3" />Download
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -130,40 +95,25 @@ function Reports() {
   );
 }
 
-function ReportCard({ t, onGenerated }: { t: typeof types[number]; onGenerated: (name: string, type: string) => void }) {
-  const [from, setFrom] = useState("2026-01-01");
-  const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [fmt, setFmt] = useState(t.formats[0]);
-  const [busy, setBusy] = useState(false);
-  const [ready, setReady] = useState<string | null>(null);
-
-  const gen = () => {
-    setBusy(true); setReady(null);
-    setTimeout(() => {
-      const name = `${t.id}_${from}_to_${to}.${fmt.toLowerCase()}`;
-      setBusy(false); setReady(name);
-      onGenerated(name, t.title);
-      toast.success("Report ready");
-    }, 1100);
-  };
-
+function ReportCard({ t }: { t: typeof types[number] }) {
   return (
     <Card>
       <t.Icon className="w-5 h-5 text-[#005EB8] mb-2" />
-      <div className="font-semibold">{t.title}</div>
-      <div className="text-xs text-muted-foreground mt-1 mb-4 leading-relaxed">{t.desc}</div>
+      <div className="font-semibold text-slate-900">{t.title}</div>
+      <div className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">{t.desc}</div>
       <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8]" />
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8]" />
-        </div>
-        <select value={fmt} onChange={(e) => setFmt(e.target.value)} className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30">
-          {t.formats.map(f => <option key={f}>{f}</option>)}
-        </select>
-        <button onClick={gen} disabled={busy} className="w-full bg-[#005EB8] text-white font-semibold py-2 rounded-lg text-xs hover:bg-[#003F8A] disabled:opacity-60 transition-colors inline-flex items-center justify-center gap-2">
-          {busy && <Loader2 className="w-3 h-3 animate-spin" />} {busy ? "Generating…" : "Generate report"}
-        </button>
-        {ready && <button onClick={() => toast.success("Downloading…")} className="w-full text-xs text-[#005EB8] hover:underline inline-flex items-center justify-center gap-1"><Download className="w-3 h-3"/>Download {ready}</button>}
+        {t.files.map((f) => (
+          <button
+            key={f.name}
+            onClick={() => toast.success(`Downloading ${f.name}…`)}
+            className="w-full flex items-center justify-between gap-2 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 hover:bg-[#EBF5FF] hover:text-[#005EB8] hover:border-[#005EB8]/30 transition-colors group"
+          >
+            <span className="font-mono truncate">{f.name}</span>
+            <span className="flex items-center gap-1 font-semibold flex-shrink-0 text-[#005EB8]">
+              <Download className="w-3.5 h-3.5" />{f.fmt}
+            </span>
+          </button>
+        ))}
       </div>
     </Card>
   );
