@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, Building2, Wrench, Zap } from "lucide-react";
+import { Home, Building2, Wrench, Zap, ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import type { Role } from "@/types";
+import { GautengLogo, EskomLogo } from "@/components/logos/OfficialLogos";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in · WattWise" }] }),
@@ -10,130 +11,126 @@ export const Route = createFileRoute("/login")({
 });
 
 const roles: { id: Role; label: string; desc: string; Icon: typeof Home }[] = [
-  { id: "consumer", label: "Household Consumer", desc: "Monitor your meter and usage", Icon: Home },
-  { id: "municipality", label: "Municipality Operator", desc: "Oversee all meters in your area", Icon: Building2 },
-  { id: "technician", label: "Field Technician", desc: "Respond to tamper alerts on-site", Icon: Wrench },
+  { id: "consumer", label: "Household Consumer", desc: "View your meter & usage", Icon: Home },
+  { id: "municipality", label: "Municipality Operator", desc: "Oversee your network", Icon: Building2 },
+  { id: "technician", label: "Field Technician", desc: "Manage your job queue", Icon: Wrench },
 ];
 
 function LoginPage() {
   const [email, setEmail] = useState("casious@wattwise.co.za");
-  const [password, setPassword] = useState("••••••••");
+  const [password, setPassword] = useState("password");
   const [role, setRole] = useState<Role>("consumer");
-  const [remember, setRemember] = useState(true);
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     login(email, role);
-    const target = role === "consumer" ? "/dashboard" : role === "municipality" ? "/municipality" : "/technician";
+    const target =
+      role === "consumer" ? "/dashboard" : role === "municipality" ? "/municipality" : "/technician";
     navigate({ to: target });
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left visual */}
-      <div className="hidden lg:flex relative bg-navy text-white p-12 flex-col justify-between overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal/20 grid place-items-center">
-              <Zap className="w-5 h-5 text-teal" />
-            </div>
-            <div>
-              <div className="font-bold text-lg">WattWise</div>
-              <div className="text-[11px] uppercase tracking-widest text-slate">Energy Gateway</div>
-            </div>
+    <div className="min-h-screen bg-[#EBF5FF] flex flex-col items-center justify-center px-4 py-12">
+      {/* Card */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-blue-100 border border-blue-50 overflow-hidden">
+
+        {/* Blue top stripe */}
+        <div className="bg-[#003F8A] px-8 py-6 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-white/10 grid place-items-center">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="text-white font-bold text-lg leading-tight">WattWise</div>
+            <div className="text-blue-200 text-[11px] uppercase tracking-widest leading-tight">Energy Gateway</div>
           </div>
         </div>
-        <div className="relative z-10 max-w-md">
-          <h2 className="text-3xl font-bold leading-tight">Power, transparency and accountability — for every South African household.</h2>
-          <p className="text-slate-200 mt-4 text-sm">Live meter telemetry, tamper detection and load-shedding awareness — built for municipalities and consumers from Tzaneen to Sandton.</p>
-        </div>
-        {/* Circuit SVG */}
-        <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 600 800" fill="none">
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00C9A7" strokeWidth="0.5" opacity="0.3" />
-            </pattern>
-          </defs>
-          <rect width="600" height="800" fill="url(#grid)" />
-          <g stroke="#00C9A7" strokeWidth="2" fill="none">
-            <path d="M 60 120 L 200 120 L 200 280 L 400 280 L 400 180 L 540 180" />
-            <path d="M 60 400 L 180 400 L 180 540 L 360 540 L 360 660 L 540 660" />
-            <path d="M 300 60 L 300 220 L 500 220 L 500 380" />
-          </g>
-          <g fill="#00C9A7">
-            <circle cx="60" cy="120" r="5" /><circle cx="200" cy="280" r="5" />
-            <circle cx="400" cy="180" r="5" /><circle cx="540" cy="180" r="5" />
-            <circle cx="180" cy="540" r="5" /><circle cx="360" cy="660" r="5" />
-            <circle cx="300" cy="60" r="5" /><circle cx="500" cy="380" r="5" />
-          </g>
-          <g fill="#F59E0B">
-            <circle cx="400" cy="280" r="6" /><circle cx="500" cy="220" r="6" />
-          </g>
-        </svg>
-      </div>
 
-      {/* Right form */}
-      <div className="flex items-center justify-center p-6 lg:p-12 bg-background">
-        <form onSubmit={submit} className="w-full max-w-md">
-          <div className="lg:hidden mb-8 flex items-center gap-2">
-            <Zap className="w-6 h-6 text-teal" />
-            <span className="font-bold">WattWise</span>
+        <form onSubmit={submit} className="px-8 py-7 space-y-5">
+          <div>
+            <h1 className="text-xl font-extrabold text-slate-900">Welcome back</h1>
+            <p className="text-sm text-slate-500 mt-1">Sign in to access your dashboard.</p>
           </div>
-          <h1 className="text-2xl font-bold">Welcome back</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to access your gateway.</p>
 
-          <div className="mt-6 space-y-4">
-            <div>
-              <label className="block text-xs font-medium mb-1.5">Email address</label>
-              <input
-                type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                className="w-full border border-input rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-teal/40"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1.5">Password</label>
-              <input
-                type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="w-full border border-input rounded-lg px-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-teal/40"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded" />
-              Remember me on this device
+          {/* Email */}
+          <div>
+            <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Email address
             </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8] transition-colors"
+            />
           </div>
 
-          <div className="mt-6">
-            <div className="text-xs font-medium mb-2">I'm signing in as</div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8] transition-colors"
+            />
+          </div>
+
+          {/* Role selector */}
+          <div>
+            <div className="text-xs font-semibold text-slate-700 mb-2">I am signing in as</div>
+            <div className="grid grid-cols-3 gap-2">
               {roles.map((r) => {
                 const active = role === r.id;
                 return (
                   <button
-                    type="button" key={r.id} onClick={() => setRole(r.id)}
-                    className={`text-left p-3 rounded-xl border-2 transition-all ${
-                      active ? "border-teal bg-teal/5" : "border-border hover:border-slate"
+                    key={r.id}
+                    type="button"
+                    onClick={() => setRole(r.id)}
+                    className={`flex flex-col items-center text-center p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      active
+                        ? "border-[#005EB8] bg-[#EBF5FF] text-[#005EB8]"
+                        : "border-slate-200 hover:border-slate-300 text-slate-500"
                     }`}
                   >
-                    <r.Icon className={`w-5 h-5 mb-2 ${active ? "text-teal" : "text-muted-foreground"}`} />
-                    <div className="text-xs font-semibold">{r.label}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{r.desc}</div>
+                    <r.Icon className="w-5 h-5 mb-1.5" />
+                    <div className="text-[11px] font-semibold leading-tight">{r.label}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5 leading-tight hidden sm:block">{r.desc}</div>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          <button type="submit" className="mt-6 w-full bg-teal text-navy font-semibold py-2.5 rounded-lg hover:bg-teal-600 transition-colors text-sm">
-            Sign in to Gateway
+          {/* Submit */}
+          <button
+            type="submit"
+            className="w-full bg-[#005EB8] hover:bg-[#003F8A] text-white font-bold py-3 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+          >
+            Sign in to Gateway <ChevronRight className="w-4 h-4" />
           </button>
 
-          <p className="text-[11px] text-muted-foreground text-center mt-4">
-            By signing in you accept the WattWise data-use policy and consent to telemetry being shared with your local municipality.
+          <p className="text-[10.5px] text-slate-400 text-center leading-relaxed">
+            By signing in you accept the WattWise data-use policy and consent to
+            telemetry being shared with your local municipality.
           </p>
         </form>
+      </div>
+
+      {/* Official logos below card */}
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+        <GautengLogo />
+        <div className="w-px h-10 bg-blue-200 hidden sm:block" />
+        <EskomLogo />
       </div>
     </div>
   );

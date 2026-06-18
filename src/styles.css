@@ -35,6 +35,9 @@
   --color-ring: var(--ring);
 
   /* WattWise brand palette */
+  --color-gov-blue: #005EB8;
+  --color-gov-blue-dark: #003F8A;
+  --color-gov-blue-light: #EBF5FF;
   --color-navy: #0B1628;
   --color-navy-800: #112240;
   --color-navy-600: #1A3458;
