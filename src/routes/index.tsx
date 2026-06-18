@@ -123,8 +123,10 @@ function Hero() {
 const PARTNERS = [partner1, partner2, partner3, partner4];
 
 function Partners() {
-  /* Duplicate the list so the seam is invisible */
-  const track = [...PARTNERS, ...PARTNERS];
+  // 6× copies so first half (3 sets) always exceeds the widest viewport.
+  // No px-* padding on the track — padding was creating a visible double-gap
+  // at the seam where the end-padding of set N met the start-padding of set N+1.
+  const track = Array.from({ length: 6 }, () => PARTNERS).flat();
 
   return (
     <section className="bg-white border-y border-slate-100 py-6 overflow-hidden">
@@ -136,11 +138,15 @@ function Partners() {
       <div
         className="relative"
         style={{
-          maskImage: "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
+          maskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
         }}
       >
-        <div className="flex animate-marquee w-max gap-12 items-center px-8">
+        {/* No px-8 — padding was the source of the gap at the loop seam */}
+        <div
+          className="flex w-max gap-14 items-center"
+          style={{ animation: "marquee 40s linear infinite" }}
+        >
           {track.map((src, i) => (
             <img
               key={i}
