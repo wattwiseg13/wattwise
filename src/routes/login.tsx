@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Home, Building2, Wrench, Zap, ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import type { Role } from "@/types";
-import { GautengLogo, EskomLogo } from "@/components/logos/OfficialLogos";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in · WattWise" }] }),
@@ -126,12 +125,7 @@ function LoginPage() {
         </form>
       </div>
 
-      {/* Official logos below card */}
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
-        <GautengLogo />
-        <div className="w-px h-10 bg-blue-200 hidden sm:block" />
-        <EskomLogo />
-      </div>
+
     </div>
   );
 }
