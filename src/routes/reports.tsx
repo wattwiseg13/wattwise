@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardTitle } from "@/components/ui/card-basic";
 import { useState } from "react";
-import { FileText, Zap, Activity, Download, Loader2 } from "lucide-react";
+import { FileText, Zap, Activity, Download, Loader2, Lightbulb, Thermometer, TrendingDown, Tv } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -21,6 +21,74 @@ const types = [
   { id: "loadshed", title: "Load-shedding impact", desc: "Downtime per area and affected consumers.", Icon: FileText, formats: ["PDF"] },
 ];
 
+/* ─── Energy Suggestions ─────────────────────────────────── */
+const INSIGHTS = [
+  {
+    Icon: Thermometer,
+    title: "Your geyser is your biggest cost",
+    detail: "Your geyser accounts for about 35% of your bill. Setting it to 55°C and using a timer could save you R150+ per month.",
+    saving: "Save R150/month",
+    color: "border-l-orange-400",
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-500",
+  },
+  {
+    Icon: Zap,
+    title: "Loadshedding prep saves money",
+    detail: "Switch on your geyser right after loadshedding ends, not 30 minutes before. This avoids the demand spike that costs extra.",
+    saving: "Save R60/month",
+    color: "border-l-[#005EB8]",
+    iconBg: "bg-[#EBF5FF]",
+    iconColor: "text-[#005EB8]",
+  },
+  {
+    Icon: TrendingDown,
+    title: "You are using less than your neighbours",
+    detail: "Great news! You are using 12% less electricity than the average home in your area. Keep it up!",
+    saving: "You are already saving",
+    color: "border-l-emerald-400",
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+  },
+  {
+    Icon: Tv,
+    title: "Standby power adds up",
+    detail: "Devices left on standby — TVs, decoders, chargers — can add R30–R50 per month to your bill without you noticing.",
+    saving: "Save R30–R50/month",
+    color: "border-l-slate-400",
+    iconBg: "bg-slate-50",
+    iconColor: "text-slate-600",
+  },
+];
+
+function EnergySuggestions() {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb className="w-5 h-5 text-amber-500 flex-shrink-0" />
+        <div>
+          <h2 className="font-bold text-slate-900">Your energy saving suggestions</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Personalised tips based on your usage</p>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {INSIGHTS.map(({ Icon, title, detail, saving, color, iconBg, iconColor }) => (
+          <div key={title} className={`border-l-4 ${color} bg-slate-50/60 rounded-r-xl p-4 flex gap-3`}>
+            <div className={`w-9 h-9 rounded-xl ${iconBg} grid place-items-center flex-shrink-0`}>
+              <Icon className={`w-4 h-4 ${iconColor}`} />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-slate-800 text-sm">{title}</div>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{detail}</p>
+              <span className="inline-block mt-2 text-[11px] font-bold text-[#005EB8] bg-[#EBF5FF] px-2 py-0.5 rounded-full">{saving}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Reports() {
   const [saved, setSaved] = useState([
     { name: "Consumption_2025-12.csv", type: "Consumption", date: "2026-01-03", by: "Thandi Mokoena" },
@@ -30,6 +98,7 @@ function Reports() {
 
   return (
     <div className="space-y-6">
+      <EnergySuggestions />
       <div className="grid md:grid-cols-3 gap-4">
         {types.map((t) => <ReportCard key={t.id} t={t} onGenerated={(name, type) => setSaved((s) => [{ name, type, date: format(new Date(), "yyyy-MM-dd"), by: "You" }, ...s])} />)}
       </div>

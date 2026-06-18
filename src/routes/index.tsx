@@ -88,36 +88,6 @@ function Hero() {
         }}
       />
 
-      {/* Circuit grid — sits on top of the overlay, merges with the photo lights */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ opacity: 0.13, mixBlendMode: "screen" }}
-        viewBox="0 0 800 600"
-        fill="none"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-      >
-        <defs>
-          <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.7" />
-          </pattern>
-        </defs>
-        <rect width="800" height="600" fill="url(#grid)" />
-        <g stroke="white" strokeWidth="2" fill="none" opacity="0.5">
-          <path d="M80 120 L240 120 L240 300 L480 300 L480 180 L640 180" />
-          <path d="M80 420 L200 420 L200 540 L400 540 L400 380 L640 380" />
-          <path d="M360 60 L360 240 L600 240 L600 440" />
-        </g>
-        <g fill="white" opacity="0.6">
-          <circle cx="80"  cy="120" r="5" /><circle cx="240" cy="300" r="5" />
-          <circle cx="480" cy="180" r="5" /><circle cx="200" cy="540" r="5" />
-          <circle cx="400" cy="380" r="5" /><circle cx="360" cy="60"  r="5" />
-        </g>
-        <g fill="#93C5FD" opacity="0.8">
-          <circle cx="480" cy="300" r="7" /><circle cx="600" cy="240" r="7" />
-        </g>
-      </svg>
-
       {/* Content */}
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-28 lg:py-32">
         <div className="max-w-3xl">
