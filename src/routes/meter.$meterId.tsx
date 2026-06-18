@@ -55,7 +55,7 @@ function MeterDetail({ meterId }: { meterId: string }) {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setDispatch(true)} className="inline-flex items-center gap-2 bg-teal text-navy font-semibold px-3 py-2 rounded-lg text-sm hover:bg-teal-600"><Send className="w-4 h-4"/>Dispatch Technician</button>
+          <button onClick={() => setDispatch(true)} className="inline-flex items-center gap-2 bg-[#005EB8] text-white font-semibold px-3 py-2 rounded-lg text-sm hover:bg-[#003F8A] transition-colors"><Send className="w-4 h-4"/>Dispatch Technician</button>
           <button onClick={() => toast.success("Report exported")} className="inline-flex items-center gap-2 border border-border px-3 py-2 rounded-lg text-sm hover:bg-muted"><Download className="w-4 h-4"/>Export PDF</button>
         </div>
       </div>
@@ -80,11 +80,11 @@ function MeterDetail({ meterId }: { meterId: string }) {
           <div className="space-y-2">
             {alerts.map((a) => {
               const Icon = a.severity === "critical" ? ShieldAlert : a.severity === "warning" ? AlertTriangle : CheckCircle;
-              const border = a.severity === "critical" ? "border-l-coral" : "border-l-amber";
+              const border = a.severity === "critical" ? "border-l-red-500" : "border-l-amber-400";
               return (
                 <div key={a.id} className={`border-l-4 ${border} bg-muted/40 rounded-r-lg p-3`}>
                   <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${a.severity === "critical" ? "text-coral" : "text-amber"}`} />
+                    <Icon className={`w-4 h-4 ${a.severity === "critical" ? "text-red-500" : "text-amber-500"}`} />
                     <span className="text-xs font-medium">{a.description}</span>
                     <span className="ml-auto text-[10px] text-muted-foreground">{format(new Date(a.createdAt), "yyyy-MM-dd HH:mm")}</span>
                   </div>
@@ -112,14 +112,14 @@ function MeterDetail({ meterId }: { meterId: string }) {
           <Info label="Installed">{format(new Date(meter.installedAt), "PP")}</Info>
           <Info label="Hardware version">{meter.hardwareVersion}</Info>
           <Info label="Firmware version">{meter.firmwareVersion}</Info>
-          <Info label="Serial bridge"><span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-teal animate-pulse" />Online</span></Info>
+          <Info label="Serial bridge"><span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#005EB8] animate-pulse" />Online</span></Info>
           <Info label="Baseline watts">
             {editBaseline ? (
               <input type="number" value={baseline} onChange={(e)=>setBaseline(Number(e.target.value))}
                 onBlur={()=>{setEditBaseline(false); toast.success("Baseline updated");}}
                 autoFocus className="font-mono border border-input rounded px-2 py-0.5 w-24"/>
             ) : (
-              <button onClick={()=>setEditBaseline(true)} className="font-mono inline-flex items-center gap-1 hover:text-teal-600">{baseline} W <Pencil className="w-3 h-3"/></button>
+              <button onClick={()=>setEditBaseline(true)} className="font-mono inline-flex items-center gap-1 hover:text-[#005EB8]">{baseline} W <Pencil className="w-3 h-3"/></button>
             )}
           </Info>
           <Info label="Deviation threshold">
@@ -128,7 +128,7 @@ function MeterDetail({ meterId }: { meterId: string }) {
                 onBlur={()=>{setEditThreshold(false); toast.success("Threshold updated");}}
                 autoFocus className="font-mono border border-input rounded px-2 py-0.5 w-20"/>
             ) : (
-              <button onClick={()=>setEditThreshold(true)} className="font-mono inline-flex items-center gap-1 hover:text-teal-600">{threshold}% <Pencil className="w-3 h-3"/></button>
+              <button onClick={()=>setEditThreshold(true)} className="font-mono inline-flex items-center gap-1 hover:text-[#005EB8]">{threshold}% <Pencil className="w-3 h-3"/></button>
             )}
           </Info>
         </div>
