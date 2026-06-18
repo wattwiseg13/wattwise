@@ -1,16 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useLiveData } from "@/store/liveDataStore";
-import { useAlerts } from "@/store/alertsStore";
 import { formatZAR, TARIFF_PER_KWH } from "@/lib/format";
-import {
-  AlertTriangle, ShieldAlert, CheckCircle, Zap, X,
-  Lightbulb, ShoppingCart, ArrowRight,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle, Zap, Lightbulb, ShoppingCart, ArrowRight, X } from "lucide-react";
 import { UsagePieChart } from "@/components/charts/UsagePieChart";
 import { CountUp } from "@/components/ui/count-up";
 import { toast } from "sonner";
+import { useState } from "react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · WattWise" }] }),
@@ -23,22 +19,20 @@ export const Route = createFileRoute("/dashboard")({
 
 function ConsumerDashboard() {
   const todayKWh = useLiveData((s) => s.todayKWh);
+  const [alertVisible, setAlertVisible] = useState(true);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5">
-      <div className="space-y-4 min-w-0">
-        <SmartMeterAlert />
-        <QuickStatsRow todayKWh={todayKWh} />
-        <LoadSheddingCard />
-        <UsageBreakdown todayKWh={todayKWh} />
-      </div>
-      <AlertsFeed />
+    <div className="space-y-4">
+      {alertVisible && <SmartMeterAlert onClose={() => setAlertVisible(false)} />}
+      <QuickStatsRow todayKWh={todayKWh} />
+      <UsageBreakdown todayKWh={todayKWh} />
+      <LoadSheddingCard />
     </div>
   );
 }
 
 /* ─── Smart Meter Alert Banner ─────────────────────────────── */
-function SmartMeterAlert() {
+function SmartMeterAlert({ onClose }: { onClose: () => void }) {
   return (
     <div className="bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 flex items-start gap-3">
       <div className="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center flex-shrink-0 mt-0.5">
@@ -57,6 +51,13 @@ function SmartMeterAlert() {
           Switch it off now to save money. Restart after loadshedding ends.
         </p>
       </div>
+      <button
+        onClick={onClose}
+        className="text-amber-400 hover:text-amber-700 transition-colors flex-shrink-0 mt-0.5"
+        aria-label="Dismiss alert"
+      >
+        <X className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -121,6 +122,24 @@ function QuickStatsRow({ todayKWh }: { todayKWh: number }) {
   );
 }
 
+/* ─── Live estimate (pie chart) ──────────────────────────── */
+function UsageBreakdown({ todayKWh }: { todayKWh: number }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="font-bold text-slate-900">Where is your electricity going?</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Live estimate by appliance</p>
+        </div>
+        <span className="text-xs bg-[#EBF5FF] text-[#005EB8] font-semibold px-2.5 py-1 rounded-full">
+          Live estimate
+        </span>
+      </div>
+      <UsagePieChart totalKWh={todayKWh} />
+    </div>
+  );
+}
+
 /* ─── Load shedding ──────────────────────────────────────── */
 function LoadSheddingCard() {
   const start = new Date(); start.setHours(18, 0, 0, 0);
@@ -166,82 +185,6 @@ function LoadSheddingCard() {
       <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 font-medium bg-amber-50 rounded-xl px-3 py-2">
         <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" />
         Get ready: charge your devices and switch on the geyser before 17:45
-      </div>
-    </div>
-  );
-}
-
-/* ─── Live estimate (pie chart) ──────────────────────────── */
-function UsageBreakdown({ todayKWh }: { todayKWh: number }) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h2 className="font-bold text-slate-900">Where is your electricity going?</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Live estimate by appliance</p>
-        </div>
-        <span className="text-xs bg-[#EBF5FF] text-[#005EB8] font-semibold px-2.5 py-1 rounded-full">
-          Live estimate
-        </span>
-      </div>
-      <UsagePieChart totalKWh={todayKWh} />
-    </div>
-  );
-}
-
-/* ─── Alerts feed ────────────────────────────────────────── */
-function AlertsFeed() {
-  const alerts  = useAlerts((s) => s.alerts);
-  const dismiss = useAlerts((s) => s.dismiss);
-
-  const config = {
-    critical: { Icon: ShieldAlert,   border: "border-l-red-500",    icon: "text-red-500",   bg: "bg-red-50/60" },
-    warning:  { Icon: AlertTriangle, border: "border-l-amber-400",  icon: "text-amber-500", bg: "bg-amber-50/60" },
-    info:     { Icon: CheckCircle,   border: "border-l-[#005EB8]",  icon: "text-[#005EB8]", bg: "bg-[#EBF5FF]/60" },
-  } as const;
-
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 xl:sticky xl:top-20 flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-slate-900">Alerts</h2>
-        <span className="text-xs bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full">
-          {alerts.length}
-        </span>
-      </div>
-
-      {alerts.length === 0 && (
-        <div className="flex-1 flex flex-col items-center justify-center py-10 text-center">
-          <CheckCircle className="w-8 h-8 text-emerald-400 mb-2" />
-          <p className="text-sm font-semibold text-slate-700">All clear</p>
-          <p className="text-xs text-slate-400 mt-0.5">No active alerts right now</p>
-        </div>
-      )}
-
-      <div className="space-y-2 max-h-[560px] overflow-y-auto -mr-1 pr-1">
-        {alerts.slice(0, 12).map((a) => {
-          const c = config[a.severity];
-          return (
-            <div
-              key={a.id}
-              className={`border-l-4 ${c.border} ${c.bg} rounded-r-xl p-3 flex gap-2.5 items-start`}
-            >
-              <c.Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${c.icon}`} />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold text-slate-800 leading-snug">{a.description}</div>
-                <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                  {a.meterId} · {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
-                </div>
-              </div>
-              <button
-                onClick={() => dismiss(a.id)}
-                className="text-slate-300 hover:text-slate-600 transition-colors mt-0.5"
-                aria-label="Dismiss alert"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

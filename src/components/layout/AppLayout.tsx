@@ -1,19 +1,19 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Wrench, Bell, Smartphone, Settings, FileText,
-  LogOut, Zap, Home, Menu, X,
+  LogOut, Zap, Home, Menu, X, ShieldAlert, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useLiveData } from "@/store/liveDataStore";
-import { format } from "date-fns";
+import { useAlerts } from "@/store/alertsStore";
+import { format, formatDistanceToNow } from "date-fns";
 
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const navByRole: Record<string, NavItem[]> = {
   consumer: [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/alerts", label: "Alerts", icon: Bell },
     { to: "/ussd", label: "USSD Simulator", icon: Smartphone },
     { to: "/reports", label: "Reports", icon: FileText },
     { to: "/settings", label: "Settings", icon: Settings },
@@ -40,14 +40,87 @@ const roleBadgeColor = {
   technician: "bg-amber-50 text-amber-700",
 };
 
+const alertConfig = {
+  critical: { Icon: ShieldAlert,   border: "border-l-red-400",    iconClass: "text-red-500",   bg: "bg-red-50",      label: "Critical" },
+  warning:  { Icon: AlertTriangle, border: "border-l-amber-400",  iconClass: "text-amber-500", bg: "bg-amber-50",    label: "Warning" },
+  info:     { Icon: CheckCircle,   border: "border-l-[#005EB8]",  iconClass: "text-[#005EB8]", bg: "bg-[#EBF5FF]",  label: "Info" },
+} as const;
+
+/* ─── Expandable alert row ─────────────────────────────────── */
+function AlertRow({
+  a,
+  onDismiss,
+}: {
+  a: { id: string; severity: "critical" | "warning" | "info"; description: string; meterId: string; createdAt: string };
+  onDismiss: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const c = alertConfig[a.severity];
+
+  return (
+    <div className={`border-l-4 ${c.border} ${c.bg} rounded-r-xl overflow-hidden`}>
+      {/* Collapsed row */}
+      <button
+        className="w-full text-left p-3 flex items-start gap-2.5"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+      >
+        <c.Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${c.iconClass}`} />
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-semibold text-slate-800 leading-snug line-clamp-2">
+            {a.description}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+          </div>
+        </div>
+        {expanded
+          ? <ChevronUp className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+          : <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+        }
+      </button>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-3 pb-3 pt-0 border-t border-black/5">
+          <div className="space-y-1.5 mt-2">
+            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-600">Severity:</span>
+              <span className={`font-bold uppercase ${c.iconClass}`}>{c.label}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-600">Meter ID:</span>
+              <span className="font-mono">{a.meterId}</span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-600">Time:</span>
+              <span>{format(new Date(a.createdAt), "dd MMM yyyy, HH:mm")}</span>
+            </div>
+            <div className="text-[11px] text-slate-500 leading-relaxed mt-1">{a.description}</div>
+          </div>
+          <button
+            onClick={onDismiss}
+            className="mt-3 text-[11px] font-semibold text-slate-400 hover:text-red-500 transition-colors"
+          >
+            Dismiss alert
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppLayout({ children, title }: { children: ReactNode; title: string }) {
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const user    = useAuthStore((s) => s.user);
+  const logout  = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const connected = useLiveData((s) => s.connected);
+  const alerts  = useAlerts((s) => s.alerts);
+  const dismiss = useAlerts((s) => s.dismiss);
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const [now, setNow] = useState(new Date());
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -63,6 +136,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
   const items = navByRole[user.role];
   const RoleIcon = user.role === "consumer" ? Home : user.role === "municipality" ? Building2 : Wrench;
   const initials = user.name.split(" ").map((n) => n[0]).slice(0, 2).join("");
+  const unreadCount = alerts.length;
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -109,14 +183,12 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
 
         {/* Footer */}
         <div className="px-3 py-3 border-t border-slate-100 space-y-1">
-          {/* Live status */}
           <div className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg">
             <span className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
             <span className={connected ? "text-emerald-600 font-medium" : "text-red-500 font-medium"}>
               {connected ? "Live · Serial bridge" : "Disconnected"}
             </span>
           </div>
-          {/* User row */}
           <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-50 group">
             <div className="w-7 h-7 rounded-full bg-[#005EB8] grid place-items-center text-white text-[11px] font-bold flex-shrink-0">
               {initials}
@@ -193,7 +265,6 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
       <div className="flex-1 md:ml-60 flex flex-col min-w-0">
         {/* Topbar */}
         <header className="h-14 bg-white border-b border-slate-100 sticky top-0 z-20 flex items-center px-4 md:px-6 gap-3 shadow-sm">
-          {/* Mobile menu button */}
           <button
             className="md:hidden text-slate-500 hover:text-slate-800 mr-1"
             onClick={() => setMobileNavOpen(true)}
@@ -204,7 +275,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
 
           <h1 className="text-sm font-semibold text-slate-900 truncate">{title}</h1>
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-2 ml-auto">
             {/* Live clock */}
             <div className="font-mono text-xs text-slate-400 tabular-nums hidden sm:block">
               {format(now, "HH:mm:ss")} SAST
@@ -214,6 +285,17 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
               className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`}
               title={connected ? "Connected" : "Disconnected"}
             />
+            {/* Notification bell */}
+            <button
+              onClick={() => setNotifOpen(true)}
+              className="relative w-9 h-9 rounded-xl hover:bg-slate-100 grid place-items-center text-slate-500 hover:text-slate-800 transition-colors ml-1"
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount})` : ""}`}
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500" />
+              )}
+            </button>
           </div>
         </header>
 
@@ -239,6 +321,78 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
           );
         })}
       </nav>
+
+      {/* ── Notifications panel ── */}
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 bg-black/25 z-40 transition-opacity duration-200 ${
+          notifOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setNotifOpen(false)}
+        aria-hidden="true"
+      />
+      {/* Slide-in panel */}
+      <div
+        className={`fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col transition-transform duration-200 ${
+          notifOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        role="dialog"
+        aria-label="Notifications"
+      >
+        {/* Panel header */}
+        <div className="h-14 border-b border-slate-100 flex items-center justify-between px-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-slate-600" />
+            <span className="font-bold text-slate-900">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setNotifOpen(false)}
+            className="w-8 h-8 rounded-lg hover:bg-slate-100 grid place-items-center text-slate-400 hover:text-slate-700 transition-colors"
+            aria-label="Close notifications"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Alert list */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {alerts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 grid place-items-center mb-4">
+                <CheckCircle className="w-7 h-7 text-emerald-400" />
+              </div>
+              <p className="font-semibold text-slate-700">You're all clear</p>
+              <p className="text-sm text-slate-400 mt-1">No active notifications right now</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                Tap an alert to expand
+              </p>
+              {alerts.map((a) => (
+                <AlertRow key={a.id} a={a} onDismiss={() => dismiss(a.id)} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — dismiss all */}
+        {alerts.length > 0 && (
+          <div className="border-t border-slate-100 p-4 flex-shrink-0">
+            <button
+              onClick={() => alerts.forEach((a) => dismiss(a.id))}
+              className="w-full text-sm font-semibold text-slate-400 hover:text-red-500 transition-colors py-2"
+            >
+              Dismiss all notifications
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
