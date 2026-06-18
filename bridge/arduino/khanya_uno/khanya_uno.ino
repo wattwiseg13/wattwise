@@ -13,6 +13,7 @@ const int POT_PIN = A0;     // potentiometer wiper (middle leg)
 const int BUZZER_PIN = 7;   // buzzer signal pin (active buzzer: HIGH = beep)
 const int LED_RED = 2;      // alert LED (blinks on overuse)
 const int LED_GREEN = 3;    // normal LED (steady while usage is OK)
+const int BUTTON_PIN = 4;   // physical switch-off button (other side to GND)
 
 const unsigned long SEND_INTERVAL_MS = 1000;   // one reading per second
 const unsigned long BLINK_INTERVAL_MS = 200;   // red/buzzer pulse rate during alert
@@ -48,6 +49,7 @@ void setup() {
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
   pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);  // pressed = LOW (no resistor needed)
   allOff();
   Serial.begin(9600);
 }
@@ -74,6 +76,17 @@ void loop() {
   }
 
   if (!streaming) {
+    return;
+  }
+
+  // Physical kill switch: pressing the button cuts the appliance.
+  if (digitalRead(BUTTON_PIN) == LOW) {
+    streaming = false;
+    allOff();
+    // tell Python the appliance was switched off
+    Serial.print("{\"device_id\":\"uno1\",\"ts\":");
+    Serial.print(millis());
+    Serial.print(",\"volts\":0,\"watts\":0,\"state\":\"off\"}\n");
     return;
   }
 

@@ -88,6 +88,11 @@ def run():
 
             storage.write(rec)
 
+            if rec["state"] == "off":
+                switched_off = True
+                print(f"  --> {DEVICE_LABEL} was switched off at the device (button).")
+                break
+
             if is_overuse(rec, WATTS_THRESHOLD):
                 if not in_alert:
                     in_alert = True
