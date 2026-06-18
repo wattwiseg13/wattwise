@@ -119,7 +119,7 @@ function Reports() {
                   <td>{r.type}</td>
                   <td className="text-muted-foreground">{r.date}</td>
                   <td>{r.by}</td>
-                  <td><button onClick={() => toast.success(`Downloading ${r.name}…`)} className="text-teal-600 hover:underline inline-flex items-center gap-1"><Download className="w-3 h-3"/>Download</button></td>
+                  <td><button onClick={() => toast.success(`Downloading ${r.name}…`)} className="text-[#005EB8] hover:underline inline-flex items-center gap-1"><Download className="w-3 h-3"/>Download</button></td>
                 </tr>
               ))}
             </tbody>
@@ -149,21 +149,21 @@ function ReportCard({ t, onGenerated }: { t: typeof types[number]; onGenerated: 
 
   return (
     <Card>
-      <t.Icon className="w-5 h-5 text-teal-600 mb-2" />
+      <t.Icon className="w-5 h-5 text-[#005EB8] mb-2" />
       <div className="font-semibold">{t.title}</div>
       <div className="text-xs text-muted-foreground mt-1 mb-4 leading-relaxed">{t.desc}</div>
       <div className="space-y-2">
         <div className="grid grid-cols-2 gap-2">
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-input rounded-lg px-2 py-1.5 text-xs bg-background" />
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-input rounded-lg px-2 py-1.5 text-xs bg-background" />
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8]" />
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30 focus:border-[#005EB8]" />
         </div>
-        <select value={fmt} onChange={(e) => setFmt(e.target.value)} className="w-full border border-input rounded-lg px-2 py-1.5 text-xs bg-background">
+        <select value={fmt} onChange={(e) => setFmt(e.target.value)} className="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#005EB8]/30">
           {t.formats.map(f => <option key={f}>{f}</option>)}
         </select>
-        <button onClick={gen} disabled={busy} className="w-full bg-teal text-navy font-semibold py-2 rounded-lg text-xs hover:bg-teal-600 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+        <button onClick={gen} disabled={busy} className="w-full bg-[#005EB8] text-white font-semibold py-2 rounded-lg text-xs hover:bg-[#003F8A] disabled:opacity-60 transition-colors inline-flex items-center justify-center gap-2">
           {busy && <Loader2 className="w-3 h-3 animate-spin" />} {busy ? "Generating…" : "Generate report"}
         </button>
-        {ready && <button onClick={() => toast.success("Downloading…")} className="w-full text-xs text-teal-600 hover:underline inline-flex items-center justify-center gap-1"><Download className="w-3 h-3"/>Download {ready}</button>}
+        {ready && <button onClick={() => toast.success("Downloading…")} className="w-full text-xs text-[#005EB8] hover:underline inline-flex items-center justify-center gap-1"><Download className="w-3 h-3"/>Download {ready}</button>}
       </div>
     </Card>
   );
