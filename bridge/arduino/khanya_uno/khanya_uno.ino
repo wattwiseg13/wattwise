@@ -1,33 +1,43 @@
-// Khanya UNO demo: scan power usage, blink + alert on overuse, switch off on command.
+// Khanya UNO demo: potentiometer = usage dial, sound sensor = instant surge,
+// two LEDs (green = normal, red = overuse). Switch off on command.
 //
-// Flow: START -> stream readings every 1s (LED off = normal). watts climbs over
-// time and spikes past WATTS_THRESHOLD -> state "alert", LED blinks fast.
-// Python sends OFF -> appliance "cut": LED off, stop streaming (idle).
+// Flow: START -> stream readings every 1s. The potentiometer (A0) sets the
+// power draw (watts). A clap on the sound sensor (D7) adds a short surge.
+// watts above WATTS_THRESHOLD -> state "alert": green off, red LED blinks.
+// Python sends OFF -> appliance "cut": both LEDs off, stop streaming.
 // STOP -> stop streaming.
 //
 // volts stays steady ~230 (reserved for the outage / voltage-sag signal).
-// watts is the climbing value (the overuse signal). Swap the simulated watts
-// for a real current-sensor reading when the hardware arrives.
 
-const int LED_PIN = 2;  // external LED on breadboard: pin 2 -> resistor -> LED -> GND
+const int POT_PIN = A0;     // potentiometer wiper (middle leg)
+const int SOUND_PIN = 7;    // sound sensor digital OUT
+const int LED_RED = 2;      // alert LED (blinks on overuse)
+const int LED_GREEN = 3;    // normal LED (steady while usage is OK)
+
 const unsigned long SEND_INTERVAL_MS = 1000;   // one reading per second
-const unsigned long BLINK_INTERVAL_MS = 200;   // LED blink rate during alert
+const unsigned long BLINK_INTERVAL_MS = 200;   // red blink rate during alert
 const int WATTS_THRESHOLD = 2000;              // must match Python's threshold
+const int WATTS_MAX = 2600;                    // pot fully turned = this many watts
+const int SOUND_SURGE_WATTS = 1500;            // extra watts added by a clap
+const unsigned long SOUND_SURGE_MS = 4000;     // how long the surge lasts
 
 bool streaming = false;
 unsigned long lastSend = 0;
 unsigned long lastBlink = 0;
-unsigned long streamStart = 0;
-bool ledOn = false;
+unsigned long surgeUntil = 0;
+bool redOn = false;
 
-void setLed(bool on) {
-  ledOn = on;
-  digitalWrite(LED_PIN, on ? HIGH : LOW);
+void setLeds(bool red, bool green) {
+  redOn = red;
+  digitalWrite(LED_RED, red ? HIGH : LOW);
+  digitalWrite(LED_GREEN, green ? HIGH : LOW);
 }
 
 void setup() {
-  pinMode(LED_PIN, OUTPUT);
-  setLed(false);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(SOUND_PIN, INPUT);
+  setLeds(false, false);
   Serial.begin(9600);
 }
 
@@ -35,23 +45,20 @@ void handleCommand(String cmd) {
   cmd.trim();
   if (cmd == "START") {
     streaming = true;
-    streamStart = millis();
-    setLed(false);
+    setLeds(false, true);  // start in the normal (green) state
   } else if (cmd == "STOP" || cmd == "OFF") {
     streaming = false;
-    setLed(false);
+    setLeds(false, false);
   }
 }
 
-// Simulated power draw: normal baseline for the first 12s, then climbs ~200W/s
-// until it crosses the threshold and stays high (the "overuse" event).
-int simulatedWatts() {
-  unsigned long elapsed = millis() - streamStart;
-  if (elapsed < 12000) {
-    return 350 + (int)random(-30, 31);
+// Power draw = potentiometer position, plus a temporary surge after a clap.
+int readWatts() {
+  int watts = map(analogRead(POT_PIN), 0, 1023, 0, WATTS_MAX);
+  if (millis() < surgeUntil) {
+    watts += SOUND_SURGE_WATTS;
   }
-  int watts = 350 + (int)((elapsed - 12000) / 1000) * 200;
-  if (watts > 2600) watts = 2600;  // cap so it plateaus
+  if (watts > WATTS_MAX) watts = WATTS_MAX;
   return watts;
 }
 
@@ -64,17 +71,23 @@ void loop() {
     return;
   }
 
-  int watts = simulatedWatts();
+  // A clap (sound OUT goes HIGH) starts a short power surge.
+  if (digitalRead(SOUND_PIN) == HIGH) {
+    surgeUntil = millis() + SOUND_SURGE_MS;
+  }
+
+  int watts = readWatts();
   bool alert = watts > WATTS_THRESHOLD;
 
-  // Blink the LED while in alert; keep it off when usage is normal.
+  // LEDs: red blinks during alert (green off); green steady when normal.
   if (alert) {
+    digitalWrite(LED_GREEN, LOW);
     if (millis() - lastBlink >= BLINK_INTERVAL_MS) {
       lastBlink = millis();
-      setLed(!ledOn);
+      setLeds(!redOn, false);
     }
-  } else if (ledOn) {
-    setLed(false);
+  } else {
+    setLeds(false, true);
   }
 
   // Send one reading per second.
