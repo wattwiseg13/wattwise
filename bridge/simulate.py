@@ -20,8 +20,8 @@ from bridge.backend_client import API_URL, PERSIST_TO_BACKEND, post_reading_to_b
 
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
-WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "2000"))
-RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "2.85"))
+WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "1500"))
+RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "3.90"))
 STARTING_BALANCE = float(os.environ.get("STARTING_BALANCE", "100.0"))
 PERIOD_S = int(os.environ.get("PERIOD_S", "30"))
 
