@@ -23,14 +23,14 @@ PORT = os.environ.get("SERIAL_PORT", "COM3")
 BAUD = int(os.environ.get("BAUD", "9600"))
 MAX_SECONDS = int(os.environ.get("MAX_SECONDS", "180"))
 TICK_SECONDS = int(os.environ.get("TICK_SECONDS", "15"))
-WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "2000"))
+WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "1500"))
 DEVICE_LABEL = os.environ.get("DEVICE_LABEL", "Kitchen")
 DATA_DIR = os.environ.get("DATA_DIR", "bridge/data")
 
 # Live data + heuristics
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
-RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "2.85"))
+RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "3.90"))
 STARTING_BALANCE = float(os.environ.get("STARTING_BALANCE", "100.0"))
 
 
