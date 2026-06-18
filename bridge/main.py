@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -12,6 +13,8 @@ except ImportError:  # pragma: no cover - non-Windows fallback
 from bridge.protocol import parse_reading, format_tick, is_overuse, format_alert
 from bridge.storage import Storage
 from bridge.serial_io import open_port, describe_ports
+from bridge.predict import accumulate_kwh, build_live_message
+from bridge.server import LiveServer
 
 # --- Config ---
 PORT = "COM3"            # change to your Arduino's port (see error message if wrong)
@@ -19,8 +22,16 @@ BAUD = 9600
 MAX_SECONDS = 180        # 3-minute cap
 TICK_SECONDS = 15        # progress print interval
 WATTS_THRESHOLD = 2000   # alert when power draw goes above this (watts)
-DEVICE_LABEL = "kettle"  # friendly name used in the alert message
+DEVICE_LABEL = "Kitchen"  # friendly name used in the alert message (matches the dashboard appliance)
 DATA_DIR = "bridge/data"
+
+# Live data + heuristics
+# WS_HOST: "localhost" for same-machine UI; "0.0.0.0" to allow other devices on
+# the LAN or a tunnel (ngrok) to connect. Override with env vars for deploys.
+WS_HOST = os.environ.get("WS_HOST", "localhost")
+WS_PORT = int(os.environ.get("WS_PORT", "8765"))  # UI connects to ws://<host>:8765
+RATE_PER_KWH = 2.85      # flat prepaid tariff for the demo (Rand per kWh; matches the frontend TARIFF_PER_KWH)
+STARTING_BALANCE = 100.0 # prepaid balance in Rand at the start of the demo
 
 
 def now_iso():
@@ -53,6 +64,10 @@ def run():
         sys.exit(1)
 
     storage = Storage(DATA_DIR)
+    server = LiveServer(WS_HOST, WS_PORT)
+    server.start()
+    print(f"Live data on ws://{WS_HOST}:{WS_PORT}")
+
     time.sleep(2)  # let the UNO reset after the port opens
     ser.reset_input_buffer()
     ser.write(b"START\n")
@@ -65,6 +80,9 @@ def run():
     next_tick = TICK_SECONDS
     in_alert = False        # track so we print the alert only once per spike
     switched_off = False
+    kwh = 0.0
+    overuse_count = 0
+    last_time = time.monotonic()
     try:
         while True:
             elapsed = time.monotonic() - start
@@ -93,7 +111,19 @@ def run():
                 print(f"  --> {DEVICE_LABEL} was switched off at the device (button).")
                 break
 
-            if is_overuse(rec, WATTS_THRESHOLD):
+            # Accumulate energy + cost since the last reading, then broadcast.
+            now = time.monotonic()
+            kwh = accumulate_kwh(kwh, rec["watts"], now - last_time)
+            last_time = now
+            overuse = is_overuse(rec, WATTS_THRESHOLD)
+            if overuse:
+                overuse_count += 1
+            balance = STARTING_BALANCE - (kwh * RATE_PER_KWH)
+            server.publish(
+                build_live_message(rec, kwh, balance, RATE_PER_KWH, overuse_count)
+            )
+
+            if overuse:
                 if not in_alert:
                     in_alert = True
                     print(f"  !! ALERT: {format_alert(DEVICE_LABEL, rec['watts'])}")

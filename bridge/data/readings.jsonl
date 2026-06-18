@@ -197,3 +197,15 @@
 {"device_id": "uno1", "ts_iso": "2026-06-18T16:38:40.895191+00:00", "uptime_ms": 18000, "volts": 231, "watts": 2406, "state": "alert"}
 {"device_id": "uno1", "ts_iso": "2026-06-18T16:38:41.894441+00:00", "uptime_ms": 19000, "volts": 231, "watts": 818, "state": "normal"}
 {"device_id": "uno1", "ts_iso": "2026-06-18T16:38:42.895183+00:00", "uptime_ms": 20000, "volts": 230, "watts": 210, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:32.968681+00:00", "uptime_ms": 158000, "volts": 233, "watts": 304, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:33.968596+00:00", "uptime_ms": 159000, "volts": 230, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:34.968509+00:00", "uptime_ms": 160000, "volts": 231, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:35.968742+00:00", "uptime_ms": 161000, "volts": 233, "watts": 310, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:36.969018+00:00", "uptime_ms": 162000, "volts": 227, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:37.967732+00:00", "uptime_ms": 163000, "volts": 228, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:38.968435+00:00", "uptime_ms": 164000, "volts": 229, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:39.967278+00:00", "uptime_ms": 165000, "volts": 227, "watts": 304, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:40.968134+00:00", "uptime_ms": 166000, "volts": 227, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:41.967757+00:00", "uptime_ms": 167000, "volts": 228, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:42.968442+00:00", "uptime_ms": 168000, "volts": 227, "watts": 307, "state": "normal"}
+{"device_id": "uno1", "ts_iso": "2026-06-18T20:16:43.968215+00:00", "uptime_ms": 169000, "volts": 228, "watts": 310, "state": "normal"}
