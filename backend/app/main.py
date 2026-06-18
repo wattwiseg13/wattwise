@@ -3,11 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.api.router import api_router
+from app.database import init_db, SessionLocal
+from app.db_seed import seed_database
 
 app = FastAPI(
     title=settings.APP_NAME,
     description="Backend API for WattWise smart meter monitoring demo.",
-    version="0.1.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -23,6 +25,18 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+    db = SessionLocal()
+
+    try:
+        seed_database(db)
+    finally:
+        db.close()
 
 
 @app.get("/")

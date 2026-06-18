@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: wattwise_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wattwise
+      POSTGRES_USER: wattwise_user
+      POSTGRES_PASSWORD: wattwise_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - wattwise_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  wattwise_postgres_data:
