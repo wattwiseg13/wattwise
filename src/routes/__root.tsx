@@ -78,9 +78,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NexMotion Energy Gateway" },
+      { title: "WattWise" },
       { name: "description", content: "Smart electricity monitoring and civic reporting for South African households and municipalities." },
-      { property: "og:title", content: "NexMotion Energy Gateway" },
+      { property: "og:title", content: "WattWise" },
       { property: "og:description", content: "Smart electricity monitoring and civic reporting for South African households and municipalities." },
       { property: "og:type", content: "website" },
     ],

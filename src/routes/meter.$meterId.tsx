@@ -16,7 +16,7 @@ import { DispatchModal } from "@/components/ui/dispatch-modal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/meter/$meterId")({
-  head: () => ({ meta: [{ title: "Meter detail · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Meter detail · WattWise" }] }),
   component: MeterDetailPage,
 });
 
