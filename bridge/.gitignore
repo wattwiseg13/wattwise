@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 bridge/data/
 .pytest_cache/
+# WattWise bridge generated readings
+bridge/data/*.csv
+bridge/data/*.jsonl
