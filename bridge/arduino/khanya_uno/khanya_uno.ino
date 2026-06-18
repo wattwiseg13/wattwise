@@ -9,7 +9,7 @@
 // watts is the climbing value (the overuse signal). Swap the simulated watts
 // for a real current-sensor reading when the hardware arrives.
 
-const int LED_PIN = 8;  // external LED on breadboard: pin 8 -> resistor -> LED -> GND
+const int LED_PIN = 2;  // external LED on breadboard: pin 2 -> resistor -> LED -> GND
 const unsigned long SEND_INTERVAL_MS = 1000;   // one reading per second
 const unsigned long BLINK_INTERVAL_MS = 200;   // LED blink rate during alert
 const int WATTS_THRESHOLD = 2000;              // must match Python's threshold
