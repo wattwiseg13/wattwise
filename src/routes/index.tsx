@@ -1,7 +1,11 @@
 import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/authStore";
-import { Zap, Shield, Eye, TrendingDown, ArrowRight, CheckCircle2, Phone, BarChart3, Wifi, ChevronRight } from "lucide-react";
-import { EskomLogo, GautengLogo } from "@/components/logos/OfficialLogos";
+import { Zap, Shield, Eye, TrendingDown, ArrowRight, CheckCircle2, Phone, BarChart3, ChevronRight } from "lucide-react";
+import heroBg from "@/assets/hero-bg.png";
+import partner1 from "@/assets/partner1.png";
+import partner2 from "@/assets/partner2.png";
+import partner3 from "@/assets/partner3.png";
+import partner4 from "@/assets/partner4.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [{ title: "WattWise — Smart Energy Gateway" }] }),
@@ -65,10 +69,29 @@ function Navbar() {
 /* ─── Hero ───────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[#003F8A] text-white">
-      {/* Circuit grid background */}
+    <section className="relative overflow-hidden text-white">
+      {/* Joburg night-lights photo */}
+      <img
+        src={heroBg}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover object-center"
+        loading="eager"
+      />
+
+      {/* Dark blue gradient overlay — lets city lights glow through */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(0,31,94,0.88) 0%, rgba(0,63,138,0.80) 50%, rgba(0,20,70,0.90) 100%)",
+        }}
+      />
+
+      {/* Circuit grid — sits on top of the overlay, merges with the photo lights */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-10 pointer-events-none"
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ opacity: 0.13, mixBlendMode: "screen" }}
         viewBox="0 0 800 600"
         fill="none"
         preserveAspectRatio="xMidYMid slice"
@@ -76,30 +99,28 @@ function Hero() {
       >
         <defs>
           <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.6" />
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.7" />
           </pattern>
         </defs>
         <rect width="800" height="600" fill="url(#grid)" />
-        <g stroke="white" strokeWidth="2.5" fill="none" opacity="0.6">
+        <g stroke="white" strokeWidth="2" fill="none" opacity="0.5">
           <path d="M80 120 L240 120 L240 300 L480 300 L480 180 L640 180" />
           <path d="M80 420 L200 420 L200 540 L400 540 L400 380 L640 380" />
           <path d="M360 60 L360 240 L600 240 L600 440" />
         </g>
-        <g fill="white" opacity="0.7">
-          <circle cx="80" cy="120" r="6" /><circle cx="240" cy="300" r="6" />
-          <circle cx="480" cy="180" r="6" /><circle cx="200" cy="540" r="6" />
-          <circle cx="400" cy="380" r="6" /><circle cx="360" cy="60" r="6" />
+        <g fill="white" opacity="0.6">
+          <circle cx="80"  cy="120" r="5" /><circle cx="240" cy="300" r="5" />
+          <circle cx="480" cy="180" r="5" /><circle cx="200" cy="540" r="5" />
+          <circle cx="400" cy="380" r="5" /><circle cx="360" cy="60"  r="5" />
         </g>
-        <g fill="#60A5FA" opacity="0.9">
-          <circle cx="480" cy="300" r="8" /><circle cx="600" cy="240" r="8" />
+        <g fill="#93C5FD" opacity="0.8">
+          <circle cx="480" cy="300" r="7" /><circle cx="600" cy="240" r="7" />
         </g>
       </svg>
 
+      {/* Content */}
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-28 lg:py-32">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-white/10 text-blue-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 border border-white/20">
-            <Wifi className="w-3.5 h-3.5" /> Live · GSM-connected meters across Gauteng
-          </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight">
             Powering<br />Accountability.<br />
             <span className="text-blue-300">Every Rand. Every Household.</span>
@@ -128,18 +149,37 @@ function Hero() {
   );
 }
 
-/* ─── Partners ───────────────────────────────────────────── */
+/* ─── Partners ticker ────────────────────────────────────── */
+const PARTNERS = [partner1, partner2, partner3, partner4];
+
 function Partners() {
+  /* Duplicate the list so the seam is invisible */
+  const track = [...PARTNERS, ...PARTNERS];
+
   return (
-    <section className="bg-[#EBF5FF] border-y border-blue-100 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <p className="text-center text-xs uppercase tracking-widest text-slate-400 font-semibold mb-6">
-          Official partners &amp; integrations
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
-          <GautengLogo />
-          <div className="w-px h-12 bg-blue-200 hidden md:block" />
-          <EskomLogo />
+    <section className="bg-white border-y border-slate-100 py-6 overflow-hidden">
+      <p className="text-center text-[11px] uppercase tracking-widest text-slate-400 font-semibold mb-5">
+        Official partners &amp; integrations
+      </p>
+
+      {/* Mask: fade edges to white */}
+      <div
+        className="relative"
+        style={{
+          maskImage: "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)",
+        }}
+      >
+        <div className="flex animate-marquee w-max gap-12 items-center px-8">
+          {track.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`Partner ${(i % PARTNERS.length) + 1}`}
+              className="h-12 w-auto object-contain select-none"
+              draggable={false}
+            />
+          ))}
         </div>
       </div>
     </section>
