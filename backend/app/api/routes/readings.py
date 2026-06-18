@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
+from sqlalchemy.orm import Session
 
+from app.database import get_db
+from app.db_models import MeterDB, ReadingDB, AlertDB, now_sast
 from app.mock_data import (
     LATEST_READINGS,
     READING_HISTORY,
     METERS,
     ALERTS,
-    now_sast,
 )
 
 router = APIRouter()
@@ -24,32 +26,85 @@ class ReadingIngestRequest(BaseModel):
     source: str = "ARDUINO"
 
 
-@router.get("/{meter_id}/latest")
-def get_latest_reading(meter_id: str):
-    reading = LATEST_READINGS.get(meter_id)
+def reading_to_response(reading: ReadingDB):
+    return {
+        "meter_id": reading.meter_id,
+        "watts": reading.watts,
+        "voltage": reading.voltage,
+        "current_amps": reading.current_amps,
+        "kwh_today": reading.kwh_today,
+        "estimated_cost_today": reading.estimated_cost_today,
+        "pulse_count": reading.pulse_count,
+        "status": reading.status,
+        "source": reading.source,
+        "timestamp": reading.created_at.isoformat(),
+    }
 
-    if not reading:
+
+@router.get("/{meter_id}/latest")
+def get_latest_reading(meter_id: str, db: Session = Depends(get_db)):
+    db_reading = (
+        db.query(ReadingDB)
+        .filter(ReadingDB.meter_id == meter_id)
+        .order_by(ReadingDB.created_at.desc())
+        .first()
+    )
+
+    if db_reading:
+        return reading_to_response(db_reading)
+
+    fallback_reading = LATEST_READINGS.get(meter_id)
+
+    if not fallback_reading:
         raise HTTPException(status_code=404, detail="Reading not found for meter")
 
-    return reading
+    return fallback_reading
 
 
 @router.get("/{meter_id}/history")
-def get_reading_history(meter_id: str, limit: int = 60):
-    history = READING_HISTORY.get(meter_id)
+def get_reading_history(
+    meter_id: str,
+    limit: int = 60,
+    db: Session = Depends(get_db),
+):
+    db_readings = (
+        db.query(ReadingDB)
+        .filter(ReadingDB.meter_id == meter_id)
+        .order_by(ReadingDB.created_at.desc())
+        .limit(limit)
+        .all()
+    )
 
-    if history is None:
+    if db_readings:
+        ordered_readings = list(reversed(db_readings))
+
+        return [
+            {
+                "meter_id": reading.meter_id,
+                "time": reading.created_at.strftime("%H:%M:%S"),
+                "watts": reading.watts,
+                "timestamp": reading.created_at.isoformat(),
+            }
+            for reading in ordered_readings
+        ]
+
+    fallback_history = READING_HISTORY.get(meter_id)
+
+    if fallback_history is None:
         raise HTTPException(status_code=404, detail="History not found for meter")
 
-    return history[-limit:]
+    return fallback_history[-limit:]
 
 
 @router.post("/ingest")
-def ingest_reading(payload: ReadingIngestRequest):
-    if payload.meter_id not in METERS:
+def ingest_reading(payload: ReadingIngestRequest, db: Session = Depends(get_db)):
+    meter = db.query(MeterDB).filter(MeterDB.meter_id == payload.meter_id).first()
+
+    if not meter:
         raise HTTPException(status_code=404, detail="Meter not found")
 
     current_amps = payload.current_amps
+
     if current_amps is None and payload.voltage > 0:
         current_amps = round(payload.watts / payload.voltage, 2)
 
@@ -63,53 +118,86 @@ def ingest_reading(payload: ReadingIngestRequest):
     else:
         status = "NORMAL"
 
-    reading = {
-        "meter_id": payload.meter_id,
-        "watts": payload.watts,
-        "voltage": payload.voltage,
-        "current_amps": current_amps,
-        "kwh_today": kwh_today,
-        "estimated_cost_today": estimated_cost_today,
-        "pulse_count": payload.pulse_count,
-        "status": status,
-        "source": payload.source,
-        "timestamp": now_sast(),
-    }
+    db_reading = ReadingDB(
+        meter_id=payload.meter_id,
+        watts=payload.watts,
+        voltage=payload.voltage,
+        current_amps=current_amps,
+        kwh_today=kwh_today,
+        estimated_cost_today=estimated_cost_today,
+        pulse_count=payload.pulse_count,
+        status=status,
+        source=payload.source,
+    )
 
+    db.add(db_reading)
+
+    meter.current_draw = payload.watts
+    meter.status = status
+    meter.last_seen = now_sast()
+
+    db.commit()
+    db.refresh(db_reading)
+
+    reading = reading_to_response(db_reading)
+
+    # Keep mock memory updated so existing dashboard routes still reflect live data.
     LATEST_READINGS[payload.meter_id] = reading
 
     READING_HISTORY.setdefault(payload.meter_id, [])
     READING_HISTORY[payload.meter_id].append(
         {
             "meter_id": payload.meter_id,
-            "time": reading["timestamp"][11:19],
+            "time": db_reading.created_at.strftime("%H:%M:%S"),
             "watts": payload.watts,
-            "timestamp": reading["timestamp"],
+            "timestamp": db_reading.created_at.isoformat(),
         }
     )
-
     READING_HISTORY[payload.meter_id] = READING_HISTORY[payload.meter_id][-120:]
 
-    METERS[payload.meter_id]["current_draw"] = payload.watts
-    METERS[payload.meter_id]["status"] = status
-    METERS[payload.meter_id]["last_seen"] = reading["timestamp"]
+    if payload.meter_id in METERS:
+        METERS[payload.meter_id]["current_draw"] = payload.watts
+        METERS[payload.meter_id]["status"] = status
+        METERS[payload.meter_id]["last_seen"] = reading["timestamp"]
+
+    created_alert = None
 
     if status == "CRITICAL":
-        alert = {
-            "alert_id": f"ALT-{len(ALERTS) + 1:03d}",
-            "meter_id": payload.meter_id,
-            "address": METERS[payload.meter_id]["address"],
-            "alert_type": "LOAD_ANOMALY",
-            "severity": "CRITICAL",
-            "description": "Critical usage spike detected from live Arduino reading.",
-            "deviation_percentage": 100,
-            "status": "OPEN",
-            "assigned_to": None,
-            "timestamp": now_sast(),
+        alert_id = f"ALT-{len(ALERTS) + 1:03d}"
+
+        db_alert = AlertDB(
+            alert_id=alert_id,
+            meter_id=payload.meter_id,
+            address=meter.address,
+            alert_type="LOAD_ANOMALY",
+            severity="CRITICAL",
+            description="Critical usage spike detected from live Arduino reading.",
+            deviation_percentage=100,
+            status="OPEN",
+            assigned_to=None,
+        )
+
+        db.add(db_alert)
+        db.commit()
+        db.refresh(db_alert)
+
+        created_alert = {
+            "alert_id": db_alert.alert_id,
+            "meter_id": db_alert.meter_id,
+            "address": db_alert.address,
+            "alert_type": db_alert.alert_type,
+            "severity": db_alert.severity,
+            "description": db_alert.description,
+            "deviation_percentage": db_alert.deviation_percentage,
+            "status": db_alert.status,
+            "assigned_to": db_alert.assigned_to,
+            "timestamp": db_alert.created_at.isoformat(),
         }
-        ALERTS.insert(0, alert)
+
+        ALERTS.insert(0, created_alert)
 
     return {
-        "message": "Reading ingested successfully",
+        "message": "Reading ingested and stored successfully",
         "reading": reading,
+        "alert_created": created_alert,
     }
