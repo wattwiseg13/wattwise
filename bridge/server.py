@@ -7,6 +7,7 @@ connected browser receives the JSON immediately.
 
 import asyncio
 import json
+import queue
 import threading
 
 import websockets
@@ -20,6 +21,7 @@ class LiveServer:
         self.loop = None
         self._thread = None
         self._latest = None  # last message, sent to clients on connect
+        self._inbox = queue.Queue()  # commands from clients (e.g. "MUTE", "OFF")
 
     async def _handler(self, ws):
         self.clients.add(ws)
@@ -29,9 +31,24 @@ class LiveServer:
             except websockets.WebSocketException:
                 pass
         try:
-            await ws.wait_closed()
+            # Receive client commands until they disconnect. The synchronous
+            # serial loop drains them via poll_commands().
+            async for message in ws:
+                self._inbox.put(message)
+        except websockets.WebSocketException:
+            pass
         finally:
             self.clients.discard(ws)
+
+    def poll_commands(self):
+        """Thread-safe: return any commands received from clients since last call."""
+        cmds = []
+        while True:
+            try:
+                cmds.append(self._inbox.get_nowait())
+            except queue.Empty:
+                break
+        return cmds
 
     async def _serve(self):
         async with websockets.serve(self._handler, self.host, self.port):
