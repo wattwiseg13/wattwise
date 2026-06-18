@@ -3,10 +3,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardTitle } from "@/components/ui/card-basic";
 import { useAlerts } from "@/store/alertsStore";
 import { useState } from "react";
-import { Camera, MapPin, CheckCircle2, Truck, Wrench as WrenchIcon, ClipboardCheck } from "lucide-react";
+import { Camera, MapPin, CheckCircle2, Truck, Wrench as WrenchIcon, ClipboardCheck, LoaderCircle } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import type { Job } from "@/types";
+import { meters } from "@/mock/meters";
+import { TechnicianJobMap } from "@/components/maps/TechnicianJobMap";
 
 export const Route = createFileRoute("/technician")({
   head: () => ({ meta: [{ title: "My Jobs · NexMotion" }] }),
@@ -30,7 +32,7 @@ function Technician() {
           <div className="space-y-3">{active.map((j) => <JobCard key={j.id} job={j} />)}</div>
         </div>
 
-        <JobMap />
+        <TechnicianJobMap jobs={active} meters={meters} />
 
         <Card>
           <CardTitle hint={`${resolvedToday.length} jobs`}>Resolved today</CardTitle>
@@ -114,47 +116,45 @@ function ActionBtn({ children, onClick, disabled, primary }: { children: React.R
   );
 }
 
-function JobMap() {
-  const jobs = useAlerts((s) => s.jobs).filter((j) => j.status !== "resolved");
-  return (
-    <Card>
-      <CardTitle hint="My assigned jobs">Job map</CardTitle>
-      <div className="bg-navy rounded-xl relative overflow-hidden" style={{ height: 280 }}>
-        <svg viewBox="0 0 800 280" className="w-full h-full">
-          <pattern id="techstreets" width="80" height="60" patternUnits="userSpaceOnUse">
-            <rect width="80" height="60" fill="#0B1628" />
-            <rect x="2" y="2" width="76" height="56" fill="#112240" rx="2" />
-          </pattern>
-          <rect width="800" height="280" fill="url(#techstreets)" />
-          {jobs.map((j, i) => {
-            const x = 100 + i * 140 + (i % 2) * 30;
-            const y = 80 + (i % 3) * 60;
-            const color = j.severity === "critical" ? "#EF4444" : "#F59E0B";
-            return (
-              <g key={j.id}>
-                <circle cx={x} cy={y} r="14" fill={color} opacity="0.25" />
-                <circle cx={x} cy={y} r="6" fill={color} />
-                <text x={x} y={y + 30} textAnchor="middle" fill="white" fontSize="10" fontFamily="monospace">{j.meterId.split("-")[1]}</text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </Card>
-  );
-}
-
 function QuickReportForm() {
   const [meterId, setMeterId] = useState("NXM-019-TZN");
   const [findings, setFindings] = useState("Illegal bypass wire");
   const [desc, setDesc] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
-  const [coords, setCoords] = useState<string>("Tap to capture location");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Location capture is not supported by this browser.");
+      return;
+    }
+
+    setLocating(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setLocating(false);
+      },
+      (error) => {
+        const message = error.code === 1
+          ? "Location permission was denied. Allow location access and try again."
+          : error.code === 2
+            ? "Your current location could not be determined."
+            : "Location capture timed out. Please try again.";
+        setLocationError(message);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+    );
+  };
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Field report submitted · job moved to Resolved");
-    setDesc(""); setPhoto(null);
+    setDesc(""); setPhoto(null); setCoords(null); setLocationError(null);
   };
 
   return (
@@ -185,10 +185,13 @@ function QuickReportForm() {
         </div>
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">GPS coordinates</label>
-          <button type="button" onClick={() => setCoords("-23.8336, 30.1635")} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted">
-            <MapPin className="w-4 h-4 text-teal-600" />
-            <span className="font-mono">{coords}</span>
+          <button type="button" onClick={captureLocation} disabled={locating} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted disabled:cursor-wait disabled:opacity-60">
+            {locating ? <LoaderCircle className="w-4 h-4 animate-spin text-teal-600" /> : <MapPin className="w-4 h-4 text-teal-600" />}
+            <span className="font-mono">
+              {locating ? "Capturing location…" : coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : "Tap to capture location"}
+            </span>
           </button>
+          {locationError && <div className="mt-1.5 text-[11px] text-coral">{locationError}</div>}
         </div>
         <button type="submit" className="w-full bg-teal text-navy font-semibold py-2.5 rounded-lg text-sm hover:bg-teal-600">
           Submit field report

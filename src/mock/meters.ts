@@ -16,6 +16,15 @@ const statuses: MeterStatus[] = [
   "critical","critical","critical","offline","offline","normal",
 ];
 
+const meterLocations: ReadonlyArray<readonly [number, number]> = [
+  [-23.8214, 30.1579], [-23.8282, 30.1686], [-23.8351, 30.1621], [-23.8428, 30.1742],
+  [-23.8497, 30.1538], [-23.8159, 30.1811], [-23.8268, 30.1467], [-23.8389, 30.1882],
+  [-23.8541, 30.1664], [-23.8118, 30.1602], [-23.8237, 30.1924], [-23.8455, 30.1408],
+  [-23.8588, 30.1817], [-23.8049, 30.1748], [-23.8316, 30.1339], [-23.8662, 30.1584],
+  [-23.8175, 30.2011], [-23.8412, 30.2018], [-23.8731, 30.1741], [-23.7978, 30.1516],
+  [-23.8523, 30.1279], [-23.8794, 30.1913], [-23.8087, 30.1361], [-23.8627, 30.1433],
+];
+
 export const meters: Meter[] = Array.from({ length: 24 }, (_, i) => {
   const status = statuses[i];
   const baseline = 1800 + Math.floor(Math.random() * 600);
@@ -38,8 +47,8 @@ export const meters: Meter[] = Array.from({ length: 24 }, (_, i) => {
     installedAt: new Date(Date.now() - 365 * 24 * 3600_000 * (1 + Math.random() * 3)).toISOString(),
     hardwareVersion: "NX-Gateway v2.1",
     firmwareVersion: "1.4.7",
-    lat: -23.83 + (Math.random() - 0.5) * 0.1,
-    lng: 30.16 + (Math.random() - 0.5) * 0.1,
+    lat: meterLocations[i][0],
+    lng: meterLocations[i][1],
   };
 });
 
