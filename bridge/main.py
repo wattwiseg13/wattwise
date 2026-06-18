@@ -30,7 +30,7 @@ DATA_DIR = os.environ.get("DATA_DIR", "bridge/data")
 # Live data + heuristics
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
-RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "2.85"))
+RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "3.90"))
 STARTING_BALANCE = float(os.environ.get("STARTING_BALANCE", "100.0"))
 
 
