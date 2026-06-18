@@ -10,7 +10,8 @@
 // volts stays steady ~230 (reserved for the outage / voltage-sag signal).
 
 const int POT_PIN = A0;     // potentiometer wiper (middle leg)
-const int BUZZER_PIN = 7;   // buzzer signal pin (active buzzer: HIGH = beep)
+const int BUZZER_PIN = 7;   // passive buzzer signal pin (driven with tone())
+const int BUZZER_HZ = 2000; // beep frequency for the passive buzzer
 const int LED_RED = 2;      // alert LED (blinks on overuse)
 const int LED_GREEN = 3;    // normal LED (steady while usage is OK)
 const int BUTTON_PIN = 4;   // physical switch-off button (other side to GND)
@@ -28,13 +29,14 @@ bool redOn = false;
 void setAlarm(bool on) {  // red LED + buzzer together
   redOn = on;
   digitalWrite(LED_RED, on ? HIGH : LOW);
-  digitalWrite(BUZZER_PIN, on ? HIGH : LOW);
+  if (on) tone(BUZZER_PIN, BUZZER_HZ);  // passive buzzer needs an oscillating tone
+  else    noTone(BUZZER_PIN);
 }
 
 void normalState() {  // green on, alarm off
   redOn = false;
   digitalWrite(LED_RED, LOW);
-  digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
   digitalWrite(LED_GREEN, HIGH);
 }
 
@@ -42,7 +44,7 @@ void allOff() {
   redOn = false;
   digitalWrite(LED_RED, LOW);
   digitalWrite(LED_GREEN, LOW);
-  digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
 }
 
 void setup() {
