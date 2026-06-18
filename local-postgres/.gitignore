@@ -1,0 +1,5 @@
+# Never commit real credentials
+.env
+
+# Keep the template tracked
+!.env.example
