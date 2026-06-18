@@ -23,7 +23,7 @@ PORT = os.environ.get("SERIAL_PORT", "COM3")
 BAUD = int(os.environ.get("BAUD", "9600"))
 MAX_SECONDS = int(os.environ.get("MAX_SECONDS", "180"))
 TICK_SECONDS = int(os.environ.get("TICK_SECONDS", "15"))
-WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "2000"))
+WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "1500"))
 DEVICE_LABEL = os.environ.get("DEVICE_LABEL", "Kitchen")
 DATA_DIR = os.environ.get("DATA_DIR", "bridge/data")
 
