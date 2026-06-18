@@ -6,7 +6,7 @@ import { AlertTriangle, Zap, Lightbulb, ShoppingCart, ArrowRight, X } from "luci
 import { UsagePieChart } from "@/components/charts/UsagePieChart";
 import { CountUp } from "@/components/ui/count-up";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · WattWise" }] }),
@@ -24,10 +24,37 @@ function ConsumerDashboard() {
   const runoutEta = useLiveData((s) => s.runoutEta);
   const state = useLiveData((s) => s.state);
   const watts = useLiveData((s) => s.current.watts);
+  const sendCommand = useLiveData((s) => s.sendCommand);
   const [dismissed, setDismissed] = useState(false);
 
   // Only show the alert banner when the live feed reports overuse.
   const alertVisible = state === "alert" && !dismissed;
+
+  // Snackbar with a "Mute alarm" action so the user can silence the buzzer when
+  // they can't reduce usage right now. Fires once when overuse starts.
+  useEffect(() => {
+    const ALARM_ID = "overuse-alarm";
+    if (state === "alert") {
+      toast.warning("High usage — alarm sounding", {
+        id: ALARM_ID,
+        description: "Your Kitchen is over the safe limit. Mute the buzzer if you can't reduce it now.",
+        duration: Infinity,
+        action: {
+          label: "Mute alarm",
+          onClick: () => {
+            const sent = sendCommand("MUTE");
+            toast.dismiss(ALARM_ID);
+            toast.success(sent ? "Alarm muted" : "Mute unavailable (bridge offline)", {
+              id: "overuse-alarm-ack",
+              duration: 3000,
+            });
+          },
+        },
+      });
+    } else {
+      toast.dismiss(ALARM_ID);
+    }
+  }, [state, sendCommand]);
 
   return (
     <div className="space-y-4">

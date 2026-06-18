@@ -32,7 +32,13 @@ interface LiveDataState {
   push: (r: Reading) => void;
   pushBridge: (m: BridgeMessage) => void;
   setConnected: (c: boolean) => void;
+  /** send a command back to the bridge/Arduino, e.g. "MUTE" or "OFF" */
+  sendCommand: (cmd: string) => boolean;
 }
+
+// Live socket, assigned in connect() below. Kept at module scope so the store's
+// sendCommand can reach it without re-rendering subscribers.
+let socket: WebSocket | null = null;
 
 const baseline = 1950;
 
@@ -52,6 +58,13 @@ export const useLiveData = create<LiveDataState>((set) => ({
   runoutEta: null,
   overuseCount: 0,
   setConnected: (c) => set({ connected: c, source: c ? "bridge" : "sim" }),
+  sendCommand: (cmd) => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(cmd);
+      return true;
+    }
+    return false;
+  },
   push: (r) =>
     set((s) => {
       const readings = [...s.readings.slice(-299), r];
@@ -117,6 +130,7 @@ if (typeof window !== "undefined") {
       setTimeout(connect, 2000);
       return;
     }
+    socket = ws;
     ws.onmessage = (e) => {
       try {
         useLiveData.getState().pushBridge(JSON.parse(e.data) as BridgeMessage);
@@ -125,6 +139,7 @@ if (typeof window !== "undefined") {
       }
     };
     ws.onclose = () => {
+      socket = null;
       useLiveData.getState().setConnected(false); // resume simulation
       setTimeout(connect, 2000); // auto-reconnect
     };

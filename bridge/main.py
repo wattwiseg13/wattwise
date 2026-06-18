@@ -103,6 +103,24 @@ def run():
                 print(f"{format_tick(int(elapsed))}...")
                 next_tick += TICK_SECONDS
 
+            # Commands coming back from the dashboard (over the WebSocket).
+            for cmd in server.poll_commands():
+                cmd = cmd.strip().upper()
+                if cmd == "MUTE":
+                    try:
+                        ser.write(b"MUTE\n")
+                    except serial.SerialException:
+                        pass
+                    print("  --> Alarm muted by user (usage unchanged).")
+                elif cmd == "OFF":
+                    switch_off(ser)
+                    switched_off = True
+                    print(f"  --> Switched OFF {DEVICE_LABEL} from the dashboard.")
+                    break
+            if switched_off:
+                break
+
+            # Let the user switch off the overusing appliance.
             if off_key_pressed():
                 switch_off(ser)
                 switched_off = True
