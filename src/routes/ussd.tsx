@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Phone, X } from "lucide-react";
 
 export const Route = createFileRoute("/ussd")({
-  head: () => ({ meta: [{ title: "USSD Simulator · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "USSD Simulator · WattWise" }] }),
   component: () => (
     <AppLayout title="USSD Simulator">
       <USSD />
@@ -18,7 +18,7 @@ type Screen = { title: string; lines: string[]; options?: Record<string, string>
 const screens: Record<string, Screen> = {
   start: { title: "Dial *130#", lines: ["Enter *130# and press Dial", "to simulate the offline", "USSD session."] },
   root: {
-    title: "NexMotion *130#",
+    title: "WattWise *130#",
     lines: ["Welcome, Casious", "", "1. Balance & units", "2. Current usage", "3. Power alerts", "4. Saving tips", "0. Exit"],
     options: { "1": "balance", "2": "usage", "3": "alerts", "4": "tips", "0": "start" },
   },

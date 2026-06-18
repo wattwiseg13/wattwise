@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ title: "Reports · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Reports · WattWise" }] }),
   component: () => (
     <AppLayout title="Reports">
       <Reports />

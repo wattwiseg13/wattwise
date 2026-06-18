@@ -5,7 +5,7 @@ import { useAuthStore } from "@/store/authStore";
 import type { Role } from "@/types";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in · NexMotion Energy Gateway" }] }),
+  head: () => ({ meta: [{ title: "Sign in · WattWise" }] }),
   component: LoginPage,
 });
 
@@ -16,7 +16,7 @@ const roles: { id: Role; label: string; desc: string; Icon: typeof Home }[] = [
 ];
 
 function LoginPage() {
-  const [email, setEmail] = useState("casious@nexmotion.za");
+  const [email, setEmail] = useState("casious@wattwise.co.za");
   const [password, setPassword] = useState("••••••••");
   const [role, setRole] = useState<Role>("consumer");
   const [remember, setRemember] = useState(true);
@@ -40,7 +40,7 @@ function LoginPage() {
               <Zap className="w-5 h-5 text-teal" />
             </div>
             <div>
-              <div className="font-bold text-lg">NexMotion</div>
+              <div className="font-bold text-lg">WattWise</div>
               <div className="text-[11px] uppercase tracking-widest text-slate">Energy Gateway</div>
             </div>
           </div>
@@ -79,7 +79,7 @@ function LoginPage() {
         <form onSubmit={submit} className="w-full max-w-md">
           <div className="lg:hidden mb-8 flex items-center gap-2">
             <Zap className="w-6 h-6 text-teal" />
-            <span className="font-bold">NexMotion Energy Gateway</span>
+            <span className="font-bold">WattWise</span>
           </div>
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to access your gateway.</p>
@@ -131,7 +131,7 @@ function LoginPage() {
           </button>
 
           <p className="text-[11px] text-muted-foreground text-center mt-4">
-            By signing in you accept the NexMotion data-use policy and consent to telemetry being shared with your local municipality.
+            By signing in you accept the WattWise data-use policy and consent to telemetry being shared with your local municipality.
           </p>
         </form>
       </div>

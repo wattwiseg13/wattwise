@@ -67,7 +67,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
               <Zap className="w-4 h-4 text-teal" />
             </div>
             <div>
-              <div className="text-sm font-bold tracking-tight">NexMotion</div>
+              <div className="text-sm font-bold tracking-tight">WattWise</div>
               <div className="text-[10px] uppercase tracking-widest text-slate">Energy Gateway</div>
             </div>
           </div>

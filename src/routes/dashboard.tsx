@@ -13,7 +13,7 @@ import { AlertTriangle, ShieldAlert, CheckCircle, Zap, Phone, X } from "lucide-r
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · WattWise" }] }),
   component: () => (
     <AppLayout title="My Energy Dashboard">
       <ConsumerDashboard />

@@ -12,7 +12,7 @@ import { DispatchModal } from "@/components/ui/dispatch-modal";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/municipality")({
-  head: () => ({ meta: [{ title: "Network · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Network · WattWise" }] }),
   component: () => (
     <AppLayout title="Municipality Network Overview">
       <Municipality />
