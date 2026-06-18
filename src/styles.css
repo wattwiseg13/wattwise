@@ -2,6 +2,17 @@
 @source "../src";
 @import "tw-animate-css";
 
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -34,7 +45,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* NexMotion brand palette */
+  /* WattWise brand palette */
+  --color-gov-blue: #005EB8;
+  --color-gov-blue-dark: #003F8A;
+  --color-gov-blue-light: #EBF5FF;
   --color-navy: #0B1628;
   --color-navy-800: #112240;
   --color-navy-600: #1A3458;

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import type { Job } from "@/types";
 
 export const Route = createFileRoute("/technician")({
-  head: () => ({ meta: [{ title: "My Jobs · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "My Jobs · WattWise" }] }),
   component: () => (
     <AppLayout title="Field Technician Workspace">
       <Technician />
