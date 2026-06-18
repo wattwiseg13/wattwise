@@ -1,4 +1,4 @@
-from bridge.protocol import parse_reading, format_tick
+from bridge.protocol import parse_reading, format_tick, is_overuse, format_alert
 
 
 def test_parse_valid_line():
@@ -37,3 +37,13 @@ def test_format_tick_under_minute():
 def test_format_tick_over_minute():
     assert format_tick(60) == "1m00s"
     assert format_tick(135) == "2m15s"
+
+
+def test_is_overuse_above_and_below_threshold():
+    assert is_overuse({"watts": 2180}, 2000) is True
+    assert is_overuse({"watts": 2000}, 2000) is False  # exactly at threshold = not over
+    assert is_overuse({"watts": 350}, 2000) is False
+
+
+def test_format_alert_message():
+    assert format_alert("kettle", 2180) == "kettle is overusing electricity (2180W)"

@@ -30,3 +30,13 @@ def format_tick(elapsed_seconds):
         return f"{elapsed_seconds}s"
     minutes, seconds = divmod(elapsed_seconds, 60)
     return f"{minutes}m{seconds:02d}s"
+
+
+def is_overuse(record, threshold_watts):
+    """True when a reading's power draw exceeds the overuse threshold."""
+    return record["watts"] > threshold_watts
+
+
+def format_alert(label, watts):
+    """Human-readable overuse alert, e.g. 'kettle is overusing electricity (2180W)'."""
+    return f"{label} is overusing electricity ({watts}W)"
