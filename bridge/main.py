@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -25,8 +26,10 @@ DEVICE_LABEL = "kettle"  # friendly name used in the alert message
 DATA_DIR = "bridge/data"
 
 # Live data + heuristics
-WS_HOST = "localhost"
-WS_PORT = 8765           # UI connects to ws://localhost:8765
+# WS_HOST: "localhost" for same-machine UI; "0.0.0.0" to allow other devices on
+# the LAN or a tunnel (ngrok) to connect. Override with env vars for deploys.
+WS_HOST = os.environ.get("WS_HOST", "localhost")
+WS_PORT = int(os.environ.get("WS_PORT", "8765"))  # UI connects to ws://<host>:8765
 RATE_PER_KWH = 2.50      # flat prepaid tariff for the demo (Rand per kWh)
 STARTING_BALANCE = 100.0 # prepaid balance in Rand at the start of the demo
 
