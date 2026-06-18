@@ -79,12 +79,12 @@ function Hero() {
         loading="eager"
       />
 
-      {/* Dark blue gradient overlay — lets city lights glow through */}
+      {/* Subtle dark vignette — keeps text readable without blue cast */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(135deg, rgba(0,31,94,0.88) 0%, rgba(0,63,138,0.80) 50%, rgba(0,20,70,0.90) 100%)",
+            "linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.50) 55%, rgba(0,0,0,0.18) 100%)",
         }}
       />
 
@@ -93,9 +93,9 @@ function Hero() {
         <div className="max-w-3xl">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight">
             Powering<br />Accountability.<br />
-            <span className="text-blue-300">Every Rand. Every Household.</span>
+            <span className="text-white/80">Every Rand. Every Household.</span>
           </h1>
-          <p className="mt-6 text-lg sm:text-xl text-blue-100 leading-relaxed max-w-xl">
+          <p className="mt-6 text-lg sm:text-xl text-white/75 leading-relaxed max-w-xl">
             Real-time electricity monitoring, tamper detection, and load-shedding
             awareness — built for Gauteng's households, municipalities, and field technicians.
           </p>
