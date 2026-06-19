@@ -11,6 +11,7 @@ from app.api.routes import (
     consumer,
     municipality,
     dispatcher,
+    live,
 )
 
 api_router = APIRouter()
@@ -22,6 +23,7 @@ api_router.include_router(alerts.router, prefix="/alerts", tags=["Alerts"])
 api_router.include_router(dashboards.router, prefix="/dashboards", tags=["Dashboards"])
 api_router.include_router(ussd.router, prefix="/ussd", tags=["USSD"])
 api_router.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
+api_router.include_router(live.router, prefix="/live", tags=["Live"])
 
 # PR2 portal-specific route groups
 api_router.include_router(consumer.router, prefix="/consumer", tags=["Consumer Portal"])

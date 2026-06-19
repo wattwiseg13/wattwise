@@ -15,11 +15,22 @@ from datetime import datetime, timezone
 from bridge.server import LiveServer
 from bridge.predict import accumulate_kwh, build_live_message
 from bridge.protocol import is_overuse
-from bridge.backend_client import API_URL, PERSIST_TO_BACKEND, post_reading_to_backend
+from bridge.backend_client import (
+    API_URL,
+    PERSIST_TO_BACKEND,
+    post_reading_to_backend,
+    post_live_message_to_backend,
+)
 
 
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
+ENABLE_LOCAL_WS = os.environ.get("ENABLE_LOCAL_WS", "true").lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
 WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "1500"))
 RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "3.90"))
 STARTING_BALANCE = float(os.environ.get("STARTING_BALANCE", "100.0"))
@@ -33,10 +44,14 @@ def sim_watts(elapsed_seconds):
 
 
 def run():
-    server = LiveServer(WS_HOST, WS_PORT)
-    server.start()
+    server = None
+    if ENABLE_LOCAL_WS:
+        server = LiveServer(WS_HOST, WS_PORT)
+        server.start()
+        print(f"SIMULATOR local WS on ws://{WS_HOST}:{WS_PORT}. Ctrl+C to stop.")
+    else:
+        print("SIMULATOR running; live data relayed via backend. Ctrl+C to stop.")
 
-    print(f"SIMULATOR live on ws://{WS_HOST}:{WS_PORT} (no hardware). Ctrl+C to stop.")
     print(f"FastAPI persistence: {'enabled' if PERSIST_TO_BACKEND else 'disabled'}")
     print(f"FastAPI ingest URL: {API_URL}")
 
@@ -76,8 +91,10 @@ def run():
                 overuse_count,
             )
 
-            # 1. Push instantly to frontend dashboard.
-            server.publish(live_message)
+            # 1. Push instantly to frontend dashboard (local WS + backend relay).
+            if server is not None:
+                server.publish(live_message)
+            post_live_message_to_backend(live_message)
 
             # 2. Persist simulator data to FastAPI/PostgreSQL too.
             backend_result = post_reading_to_backend(

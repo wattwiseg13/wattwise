@@ -1,0 +1,14 @@
+# Single entry point for the whole stack.
+# Everything is one origin on one port, so the browser never needs to know
+# about the backend's port — it just uses same-origin /api and /api/live/ws.
+:80 {
+	# Backend API + live WebSocket. reverse_proxy upgrades WebSockets automatically.
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# Everything else is the frontend (Vite dev server, incl. its HMR socket).
+	handle {
+		reverse_proxy frontend:5173
+	}
+}

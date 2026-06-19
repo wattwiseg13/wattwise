@@ -4,13 +4,65 @@ services:
     container_name: wattwise_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: wattwise
-      POSTGRES_USER: wattwise_user
-      POSTGRES_PASSWORD: wattwise_pass
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-wattwise}
+      POSTGRES_USER: ${POSTGRES_USER:-wattwise_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wattwise_pass}
     volumes:
       - wattwise_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wattwise_user} -d ${POSTGRES_DB:-wattwise}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: wattwise_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-wattwise_user}:${POSTGRES_PASSWORD:-wattwise_pass}@postgres:5432/${POSTGRES_DB:-wattwise}
+      # Browser reaches the backend through the proxy on the single public port.
+      FRONTEND_ORIGIN: ${PUBLIC_URL:-http://localhost:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  simulator:
+    build: ./bridge
+    container_name: wattwise_simulator
+    restart: unless-stopped
+    command: ["python", "-m", "bridge.simulate"]
+    environment:
+      # Internal service-to-service; never leaves the Docker network.
+      API_BASE: http://backend:8000/api
+      API_URL: http://backend:8000/api/readings/ingest
+      ENABLE_LOCAL_WS: "false"
+      METER_ID: ${METER_ID:-NXM-001-TZN}
+    depends_on:
+      - backend
+
+  frontend:
+    build: .
+    container_name: wattwise_frontend
+    restart: unless-stopped
+    environment:
+      # Tell Vite's HMR socket which public port the browser is on.
+      APP_PORT: ${APP_PORT:-8080}
+    depends_on:
+      - backend
+
+  # The ONLY published port. /api -> backend (incl. /api/live/ws), / -> frontend.
+  proxy:
+    image: caddy:2-alpine
+    container_name: wattwise_proxy
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - backend
+      - frontend
 
 volumes:
   wattwise_postgres_data:

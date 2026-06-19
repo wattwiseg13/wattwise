@@ -1,0 +1,15 @@
+node_modules
+dist
+.output
+.nitro
+.tanstack
+.vite
+.git
+.env
+*.log
+backend
+bridge/data
+**/__pycache__
+**/*.pyc
+.vscode
+.idea

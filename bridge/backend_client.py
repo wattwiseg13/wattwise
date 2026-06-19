@@ -4,10 +4,16 @@ from typing import Any, Dict
 import requests
 
 
-API_URL = os.environ.get(
-    "API_URL",
-    "http://localhost:8000/api/readings/ingest",
-)
+# A single API_BASE override points the WHOLE bridge (ingest + live relay) at
+# the right backend. Through Docker that's the proxy, e.g.
+# API_BASE=http://localhost:8080/api — everything else derives from it.
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000/api")
+
+API_URL = os.environ.get("API_URL", f"{API_BASE}/readings/ingest")
+
+# Live relay endpoints on the backend, also derived from API_BASE.
+LIVE_PUBLISH_URL = os.environ.get("LIVE_PUBLISH_URL", f"{API_BASE}/live/publish")
+LIVE_COMMANDS_URL = os.environ.get("LIVE_COMMANDS_URL", f"{API_BASE}/live/commands")
 
 METER_ID = os.environ.get("METER_ID", "NXM-001-TZN")
 
@@ -98,3 +104,38 @@ def post_reading_to_backend(
             "message": str(error),
             "payload": payload,
         }
+
+
+def post_live_message_to_backend(message: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Push a live UI message to the backend relay so it fans out to every browser.
+
+    Fail-safe: if the backend is unreachable the bridge keeps running. The live
+    dashboard simply won't update until the backend is back.
+    """
+
+    try:
+        response = requests.post(
+            LIVE_PUBLISH_URL,
+            json=message,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        return {"ok": response.ok, "message": response.text[:300]}
+    except requests.RequestException as error:
+        return {"ok": False, "message": str(error)}
+
+
+def poll_backend_commands() -> list:
+    """
+    Fetch dashboard commands the backend has queued for the bridge.
+
+    Returns an empty list on any failure so the serial loop never blocks.
+    """
+
+    try:
+        response = requests.get(LIVE_COMMANDS_URL, timeout=REQUEST_TIMEOUT_SECONDS)
+        if response.ok:
+            return response.json().get("commands", [])
+    except requests.RequestException:
+        pass
+    return []

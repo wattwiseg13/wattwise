@@ -26,6 +26,25 @@ unsigned long lastSend = 0;
 unsigned long lastBlink = 0;
 bool redOn = false;
 
+// --- Potentiometer smoothing + auto-calibration ---
+// Raw analogRead is noisy: single-sample SPIKES (0 -> 2576 -> 0) make the
+// dashboard and the alarm jump around. We (1) take the MEDIAN of many samples
+// per read, which throws spikes out entirely, (2) run an exponential moving
+// average so the value glides, and (3) scale against the pot's OBSERVED range
+// so a full turn always reaches WATTS_MAX no matter how the pot is wired.
+const int POT_SAMPLES = 15;      // odd count; median of these rejects spikes
+const float POT_ALPHA = 0.25;    // EMA smoothing: lower = smoother (more lag)
+float potEMA = -1.0;             // -1 = not yet initialised
+
+int potRawMin = 1023;
+int potRawMax = 0;
+const int POT_MIN_SPAN = 40;     // need at least this much sweep before scaling
+
+// Alert with hysteresis so it doesn't chatter on/off at the threshold. It turns
+// ON at WATTS_THRESHOLD and only back OFF once usage drops a clear margin below.
+bool alertState = false;
+const int ALERT_OFF_WATTS = WATTS_THRESHOLD - 200;  // ON at 1500, OFF below 1300
+
 // Red LED + buzzer together. hz sets the beep pitch (rises with severity); the
 // buzzer stays silent while muted, but the red LED keeps blinking as a warning.
 void setAlarm(bool on, int hz) {
@@ -63,6 +82,12 @@ void handleCommand(String cmd) {
   if (cmd == "START") {
     streaming = true;
     muted = false;
+    // Reset smoothing + calibration so every run starts clean at 0 W and never
+    // beeps the instant the script connects. Sweep the knob once to recalibrate.
+    potEMA = -1.0;
+    potRawMin = 1023;
+    potRawMax = 0;
+    alertState = false;
     normalState();  // start in the normal (green) state
   } else if (cmd == "STOP" || cmd == "OFF") {
     streaming = false;
@@ -73,9 +98,38 @@ void handleCommand(String cmd) {
   }
 }
 
-// Power draw = potentiometer position.
+// Power draw = smoothed potentiometer position, scaled to the pot's OBSERVED
+// range. Turn the knob fully min->max once to calibrate. Until enough range is
+// seen we report 0 W.
 int readWatts() {
-  return map(analogRead(POT_PIN), 0, 1023, 0, WATTS_MAX);
+  // 1. MEDIAN of several samples — a single spike sample is discarded outright,
+  //    unlike an average which a spike still drags upward.
+  int s[POT_SAMPLES];
+  for (int i = 0; i < POT_SAMPLES; i++) {
+    s[i] = analogRead(POT_PIN);
+    delayMicroseconds(150);  // small gap so samples aren't all in one noisy burst
+  }
+  for (int i = 1; i < POT_SAMPLES; i++) {  // insertion sort (POT_SAMPLES is small)
+    int key = s[i], j = i - 1;
+    while (j >= 0 && s[j] > key) { s[j + 1] = s[j]; j--; }
+    s[j + 1] = key;
+  }
+  int raw = s[POT_SAMPLES / 2];
+
+  // 2. Exponential moving average so the value glides as the knob turns.
+  if (potEMA < 0) potEMA = raw;
+  potEMA += POT_ALPHA * (raw - potEMA);
+  int smooth = (int)(potEMA + 0.5);
+
+  // 3. Learn the real range from the SMOOTHED signal (a noise spike can't
+  //    corrupt the calibration and throw the whole scale off).
+  if (smooth < potRawMin) potRawMin = smooth;
+  if (smooth > potRawMax) potRawMax = smooth;
+
+  if (potRawMax - potRawMin < POT_MIN_SPAN) return 0;
+
+  long watts = map(smooth, potRawMin, potRawMax, 0, WATTS_MAX);
+  return (int)constrain(watts, 0, WATTS_MAX);
 }
 
 void loop() {
@@ -99,7 +153,12 @@ void loop() {
   }
 
   int watts = readWatts();
-  bool alert = watts > WATTS_THRESHOLD;
+
+  // Hysteresis: flip to alert at the threshold, only clear it once usage has
+  // dropped a clear margin below. Stops the alarm chattering near the line.
+  if (!alertState && watts >= WATTS_THRESHOLD) alertState = true;
+  else if (alertState && watts <= ALERT_OFF_WATTS) alertState = false;
+  bool alert = alertState;
 
   // Alert: pulse the red LED + buzzer, ESCALATING with how far over the line we
   // are — just over = slow, low beeps; near max = fast, high-pitched beeps.
@@ -121,7 +180,7 @@ void loop() {
   // Send one reading per second.
   if (millis() - lastSend >= SEND_INTERVAL_MS) {
     lastSend = millis();
-    int volts = 230 + (int)random(-3, 4);  // steady mains voltage
+    int volts = 230;  // steady mains voltage (the pot drives watts, not volts)
     Serial.print("{\"device_id\":\"uno1\",\"ts\":");
     Serial.print(millis());
     Serial.print(",\"volts\":");
