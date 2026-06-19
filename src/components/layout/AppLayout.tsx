@@ -1,8 +1,9 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Wrench, Bell, Smartphone, Settings, FileText,
-  LogOut, Zap, Home, Menu, X, ShieldAlert, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
+  LogOut, Home, Menu, X, ShieldAlert, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
+import wattwiseLogo from "@/assets/wattwise-logo.svg";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useLiveData } from "@/store/liveDataStore";
