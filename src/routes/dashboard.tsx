@@ -1,19 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardTitle } from "@/components/ui/card-basic";
-import { CountUp } from "@/components/ui/count-up";
-import { WaveformChart, Sparkline } from "@/components/charts/WaveformChart";
-import { DailyBarChart } from "@/components/charts/BarCharts";
 import { useLiveData } from "@/store/liveDataStore";
-import { useAlerts } from "@/store/alertsStore";
-import { hourlyUsageToday } from "@/mock/meters";
 import { formatZAR, TARIFF_PER_KWH } from "@/lib/format";
-import { useMemo, useState } from "react";
-import { AlertTriangle, ShieldAlert, CheckCircle, Zap, Phone, X } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle, Zap, Lightbulb, ShoppingCart, ArrowRight, X } from "lucide-react";
+import { UsagePieChart } from "@/components/charts/UsagePieChart";
+import { CountUp } from "@/components/ui/count-up";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · WattWise" }] }),
   component: () => (
     <AppLayout title="My Energy Dashboard">
       <ConsumerDashboard />
@@ -22,184 +18,225 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function ConsumerDashboard() {
-  const current = useLiveData((s) => s.current);
-  const readings = useLiveData((s) => s.readings);
   const todayKWh = useLiveData((s) => s.todayKWh);
-  const hourly = useMemo(() => hourlyUsageToday(), []);
-  const currentHour = new Date().getHours();
+  const costRand = useLiveData((s) => s.costRand);
+  const balanceRand = useLiveData((s) => s.balanceRand);
+  const runoutEta = useLiveData((s) => s.runoutEta);
+  const state = useLiveData((s) => s.state);
+  const watts = useLiveData((s) => s.current.watts);
+  const sendCommand = useLiveData((s) => s.sendCommand);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Only show the alert banner when the live feed reports overuse.
+  const alertVisible = state === "alert" && !dismissed;
+
+  // Snackbar with a "Mute alarm" action so the user can silence the buzzer when
+  // they can't reduce usage right now. Fires once when overuse starts.
+  useEffect(() => {
+    const ALARM_ID = "overuse-alarm";
+    if (state === "alert") {
+      toast.warning("High usage — alarm sounding", {
+        id: ALARM_ID,
+        description: "Your Kitchen is over the safe limit. Mute the buzzer if you can't reduce it now.",
+        duration: Infinity,
+        action: {
+          label: "Mute alarm",
+          onClick: () => {
+            const sent = sendCommand("MUTE");
+            toast.dismiss(ALARM_ID);
+            toast.success(sent ? "Alarm muted" : "Mute unavailable (bridge offline)", {
+              id: "overuse-alarm-ack",
+              duration: 3000,
+            });
+          },
+        },
+      });
+    } else {
+      toast.dismiss(ALARM_ID);
+    }
+  }, [state, sendCommand]);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
-      <div className="space-y-6 min-w-0">
-        {/* Metric row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Current power</div>
-            <div className="mt-1 font-mono text-2xl font-bold text-teal-600">
-              <CountUp value={current.watts} /> <span className="text-sm text-muted-foreground">W</span>
-            </div>
-            <div className="mt-2 -mx-1"><Sparkline data={readings.slice(-60).map((r) => r.watts)} /></div>
-          </Card>
-          <Card>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Voltage</div>
-            <div className="mt-1 font-mono text-2xl font-bold">
-              <CountUp value={current.voltage} decimals={1} /> <span className="text-sm text-muted-foreground">V</span>
-            </div>
-            <div className="mt-6 text-[11px] text-muted-foreground">Nominal 230 V</div>
-          </Card>
-          <Card>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Today's usage</div>
-            <div className="mt-1 font-mono text-2xl font-bold">
-              <CountUp value={todayKWh} decimals={2} /> <span className="text-sm text-muted-foreground">kWh</span>
-            </div>
-            <div className="mt-6 text-[11px] text-muted-foreground">Since 00:00 SAST</div>
-          </Card>
-          <Card>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Estimated cost today</div>
-            <div className="mt-1 font-mono text-2xl font-bold text-amber-600">
-              {formatZAR(todayKWh * TARIFF_PER_KWH)}
-            </div>
-            <div className="mt-6 text-[11px] text-muted-foreground">@ R {TARIFF_PER_KWH}/kWh</div>
-          </Card>
-        </div>
-
-        {/* Waveform */}
-        <Card>
-          <CardTitle hint={<span className="font-mono text-teal-600">{Math.round(current.watts)} W · live</span>}>
-            Live power draw (W)
-          </CardTitle>
-          <WaveformChart height={240} />
-        </Card>
-
-        {/* Daily bars */}
-        <Card>
-          <CardTitle hint="Hourly · today">Daily usage breakdown</CardTitle>
-          <DailyBarChart data={hourly} currentHour={currentHour} />
-        </Card>
-
-        {/* Load shedding */}
-        <LoadSheddingCard />
-
-        {/* USSD panel */}
-        <USSDQuickPanel />
-      </div>
-
-      {/* Alerts sidebar */}
-      <div>
-        <AlertsFeed />
-      </div>
+    <div className="space-y-4">
+      {alertVisible && <SmartMeterAlert watts={watts} onClose={() => setDismissed(true)} />}
+      <QuickStatsRow todayKWh={todayKWh} costRand={costRand} balanceRand={balanceRand} runoutEta={runoutEta} />
+      <UsageBreakdown watts={watts} alert={state === "alert"} />
+      <LoadSheddingCard />
     </div>
   );
 }
 
+/* ─── Smart Meter Alert Banner ─────────────────────────────── */
+function SmartMeterAlert({ watts, onClose }: { watts: number; onClose: () => void }) {
+  return (
+    <div className="bg-amber-50 border-l-4 border-amber-400 rounded-2xl p-4 flex items-start gap-3">
+      <div className="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center flex-shrink-0 mt-0.5">
+        <AlertTriangle className="w-5 h-5 text-amber-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-amber-700">Smart Meter Alert</span>
+          <span className="text-[10px] text-white bg-amber-500 px-2 py-0.5 rounded-full font-semibold">Arduino · Live</span>
+        </div>
+        <p className="text-sm font-semibold text-amber-900 leading-snug">
+          Your <strong>Kitchen</strong> is drawing <strong>{Math.round(watts).toLocaleString("en-ZA")} W</strong> right
+          now — above your safe threshold.
+        </p>
+        <p className="text-xs text-amber-700 mt-1">
+          Turn it down or switch it off to save money and avoid tripping your supply.
+        </p>
+      </div>
+      <button
+        onClick={onClose}
+        className="text-amber-400 hover:text-amber-700 transition-colors flex-shrink-0 mt-0.5"
+        aria-label="Dismiss alert"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+/* ─── 4-card quick stats row ──────────────────────────────── */
+function QuickStatsRow({
+  todayKWh,
+  costRand,
+  balanceRand,
+  runoutEta,
+}: {
+  todayKWh: number;
+  costRand: number | null;
+  balanceRand: number | null;
+  runoutEta: string | null;
+}) {
+  // Prefer live bridge-derived cost; fall back to the local tariff estimate.
+  const cost = costRand ?? todayKWh * TARIFF_PER_KWH;
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Units Used */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Zap className="w-3.5 h-3.5 text-[#005EB8]" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Units Used</span>
+        </div>
+        <div className="font-mono text-2xl font-bold text-[#005EB8] tabular-nums">
+          <CountUp value={todayKWh} decimals={1} />
+        </div>
+        <div className="text-[10px] text-slate-400 mt-1">kWh today</div>
+      </div>
+
+      {/* Est. Cost */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <span className="text-xs font-bold text-amber-500 leading-none">R</span>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Est. Cost</span>
+        </div>
+        <div className="font-mono text-2xl font-bold text-amber-600 tabular-nums">
+          {formatZAR(cost)}
+        </div>
+        <div className="text-[10px] text-slate-400 mt-1">
+          {runoutEta && runoutEta !== "—" ? `Runs out ${runoutEta}` : "Since midnight"}
+        </div>
+      </div>
+
+      {/* Suggestions → reports */}
+      <Link
+        to="/reports"
+        className="bg-[#EBF5FF] rounded-2xl border border-blue-100 shadow-sm p-4 hover:bg-blue-100 transition-colors group"
+      >
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <Lightbulb className="w-3.5 h-3.5 text-[#005EB8]" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[#005EB8]">Suggestions</span>
+        </div>
+        <div className="text-2xl font-bold text-[#005EB8]">3</div>
+        <div className="text-[10px] text-[#005EB8] mt-1 flex items-center gap-0.5">
+          Tips for you
+          <ArrowRight className="w-3 h-3 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      </Link>
+
+      {/* Buy electricity */}
+      <button
+        onClick={() => toast.info("Opening prepaid portal…")}
+        className="bg-[#005EB8] rounded-2xl shadow-sm p-4 hover:bg-[#004FA3] active:bg-[#003F8A] transition-colors text-left w-full"
+      >
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <ShoppingCart className="w-3.5 h-3.5 text-white/80" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">Buy</span>
+        </div>
+        <div className="text-2xl font-bold text-white">Units</div>
+        <div className="text-[10px] text-blue-200 mt-1">
+          {balanceRand != null ? `Balance ${formatZAR(balanceRand)}` : "Add electricity"}
+        </div>
+      </button>
+    </div>
+  );
+}
+
+/* ─── Live estimate (pie chart) ──────────────────────────── */
+function UsageBreakdown({ watts, alert }: { watts: number; alert: boolean }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h2 className="font-bold text-slate-900">Where is your electricity going?</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Live power draw by appliance</p>
+        </div>
+        <span className="text-xs bg-[#EBF5FF] text-[#005EB8] font-semibold px-2.5 py-1 rounded-full">
+          Live draw
+        </span>
+      </div>
+      <UsagePieChart kitchenWatts={watts} alert={alert} />
+    </div>
+  );
+}
+
+/* ─── Load shedding ──────────────────────────────────────── */
 function LoadSheddingCard() {
   const start = new Date(); start.setHours(18, 0, 0, 0);
-  const end = new Date(); end.setHours(20, 30, 0, 0);
-  const now = new Date();
+  const end   = new Date(); end.setHours(20, 30, 0, 0);
+  const now   = new Date();
   const isActive = now >= start && now <= end;
-  const target = isActive ? end : start;
-  const diffSec = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
-  const h = Math.floor(diffSec / 3600), m = Math.floor((diffSec % 3600) / 60), s = diffSec % 60;
-  const progress = isActive ? Math.min(100, ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100) : 0;
+  const target   = isActive ? end : start;
+  const diffSec  = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+  const h = Math.floor(diffSec / 3600);
+  const m = Math.floor((diffSec % 3600) / 60);
+  const s = diffSec % 60;
+  const progress = isActive
+    ? Math.min(100, ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100)
+    : 0;
 
   return (
-    <Card className="bg-gradient-to-br from-amber-200/30 to-card border-amber/30">
+    <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber text-white text-[11px] font-bold">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[11px] font-bold">
               <Zap className="w-3 h-3" /> STAGE 2
             </span>
-            <span className="text-[11px] text-muted-foreground">EskomSePush · updated 5 min ago</span>
+            <span className="text-[11px] text-slate-400">EskomSePush · 5 min ago</span>
           </div>
-          <div className="mt-2 text-2xl font-bold">Today 18:00 – 20:30</div>
-          <div className="text-sm text-muted-foreground">Group 7 — Tzaneen North</div>
+          <div className="text-xl font-bold text-slate-900">Power off: 18:00 – 20:30</div>
+          <div className="text-sm text-slate-500 mt-0.5">Group 7 — Tzaneen North</div>
         </div>
         <div className="text-right">
-          <div className="text-[11px] uppercase text-muted-foreground">{isActive ? "Restores in" : "Starts in"}</div>
-          <div className="font-mono text-3xl font-bold text-amber-600 tabular-nums">
+          <div className="text-[11px] text-slate-400 uppercase tracking-wide">
+            {isActive ? "Power back in" : "Power off in"}
+          </div>
+          <div className="font-mono text-3xl font-bold text-amber-600 tabular-nums mt-0.5">
             {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
           </div>
         </div>
       </div>
-      <div className="mt-4 h-2 bg-amber/20 rounded-full overflow-hidden">
-        <div className="h-full bg-amber transition-all" style={{ width: `${progress}%` }} />
+
+      <div className="mt-4 h-1.5 bg-amber-100 rounded-full overflow-hidden">
+        <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
       </div>
-      <div className="mt-3 text-xs text-amber-600 font-medium">💡 Charge devices and geyser before 17:45</div>
-    </Card>
-  );
-}
 
-const ussdScreens: Record<string, { title: string; lines: string[] }> = {
-  root: { title: "NexMotion *130#", lines: ["Welcome, Casious", "1. Balance & units", "2. Current usage", "3. Power alerts", "4. Saving tips", "0. Exit"] },
-  "1": { title: "Balance & units", lines: ["Meter: NXM-001-TZN", "Remaining: 47.2 kWh", "Today: 18.4 kWh", "Cost today: R 52.44", "", "0. Back"] },
-  "2": { title: "Current usage", lines: ["Live: 1 982 W", "10s avg: 1 956 W", "Today: 18.4 kWh", "", "0. Back"] },
-  "3": { title: "Power alerts", lines: ["Tamper: OK ✓", "Load anomaly: none", "", "Load shedding:", "Stage 2 · 18:00", "Group 7", "", "0. Back"] },
-  "4": { title: "Saving tips", lines: ["1. Switch geyser off", "   before bed", "2. Use cold wash", "3. Unplug standby", "   devices", "", "0. Back"] },
-};
-
-function USSDQuickPanel() {
-  const [screen, setScreen] = useState("root");
-  const cur = ussdScreens[screen];
-  return (
-    <Card>
-      <CardTitle hint="Offline · *130#">USSD quick access</CardTitle>
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <div className="mx-auto md:mx-0 w-48 h-80 rounded-3xl bg-navy border-4 border-navy-800 p-3 flex flex-col shadow-xl">
-          <div className="h-1 w-12 bg-navy-600 rounded-full mx-auto mb-2" />
-          <div className="flex-1 bg-teal/10 rounded-xl p-3 font-mono text-[11px] text-teal-400 leading-relaxed overflow-y-auto">
-            <div className="font-bold border-b border-teal/20 pb-1 mb-2">{cur.title}</div>
-            {cur.lines.map((l, i) => <div key={i}>{l || "\u00A0"}</div>)}
-          </div>
-          <div className="h-1 w-8 bg-navy-600 rounded-full mx-auto mt-2" />
-        </div>
-        <div className="flex-1 w-full">
-          <div className="grid grid-cols-2 gap-2">
-            {[["1", "Balance"], ["2", "Usage"], ["3", "Alerts"], ["4", "Tips"]].map(([n, l]) => (
-              <button key={n} onClick={() => setScreen(n)}
-                className="border border-border rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-muted text-left">
-                <span className="font-mono text-teal-600 mr-2">{n}</span>{l}
-              </button>
-            ))}
-            <button onClick={() => setScreen("root")} className="col-span-2 text-xs text-muted-foreground hover:text-foreground py-1.5">
-              ← Reset to main menu
-            </button>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-4 flex items-start gap-2">
-            <Phone className="w-3 h-3 mt-0.5 flex-shrink-0" />
-            This mirrors what you'd get dialling *130# without data — works on any phone via the SIM800L GSM module.
-          </p>
-        </div>
+      <div className="mt-3 flex items-center gap-2 text-xs text-amber-700 font-medium bg-amber-50 rounded-xl px-3 py-2">
+        <Lightbulb className="w-3.5 h-3.5 flex-shrink-0" />
+        Get ready: charge your devices and switch on the geyser before 17:45
       </div>
-    </Card>
-  );
-}
-
-function AlertsFeed() {
-  const alerts = useAlerts((s) => s.alerts);
-  const dismiss = useAlerts((s) => s.dismiss);
-  const iconFor = (sev: string) => sev === "critical" ? ShieldAlert : sev === "warning" ? AlertTriangle : CheckCircle;
-  const borderFor = (sev: string) => sev === "critical" ? "border-l-coral" : sev === "warning" ? "border-l-amber" : "border-l-teal";
-  const colorFor = (sev: string) => sev === "critical" ? "text-coral" : sev === "warning" ? "text-amber" : "text-teal";
-
-  return (
-    <Card className="sticky top-20">
-      <CardTitle hint={`${alerts.length} events`}>Alerts feed</CardTitle>
-      <div className="space-y-2 max-h-[600px] overflow-y-auto -mx-1 px-1">
-        {alerts.slice(0, 10).map((a) => {
-          const Icon = iconFor(a.severity);
-          return (
-            <div key={a.id} className={`border-l-4 ${borderFor(a.severity)} bg-muted/40 rounded-r-lg p-3 flex gap-2 items-start`}>
-              <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${colorFor(a.severity)}`} />
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium leading-snug">{a.description}</div>
-                <div className="text-[10px] text-muted-foreground mt-1 font-mono">{a.meterId} · {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}</div>
-              </div>
-              <button onClick={() => dismiss(a.id)} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
+    </div>
   );
 }

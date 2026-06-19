@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Khanya — Live Power</title>
+  <style>
+    :root {
+      --bg: #0b1020; --card: #141a2e; --line: #233; --text: #e8edff;
+      --muted: #8aa; --ok: #34d399; --warn: #f59e0b; --bad: #ef4444; --accent: #6ea8fe;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; padding: env(safe-area-inset-top) 16px 24px;
+    }
+    header { display: flex; align-items: center; gap: 8px; padding: 18px 0 6px; }
+    header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: -.02em; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+    .dot.live { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+    .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+    .banner {
+      display: none; background: var(--bad); color: #fff; font-weight: 700;
+      padding: 14px 16px; border-radius: 14px; margin-bottom: 14px; text-align: center;
+      animation: pulse 1s infinite;
+    }
+    .banner.show { display: block; }
+    @keyframes pulse { 50% { opacity: .6; } }
+    .gauge {
+      background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 22px; text-align: center; margin-bottom: 14px;
+    }
+    .gauge .big { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+    .gauge .unit { color: var(--muted); font-size: 16px; font-weight: 600; }
+    .bar { height: 10px; background: #0c1226; border-radius: 99px; margin: 16px 0 6px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s, background .3s; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px;
+    }
+    .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+    .card .val { font-size: 26px; font-weight: 700; margin-top: 4px; }
+    .foot { color: var(--muted); font-size: 12px; text-align: center; margin-top: 18px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="dot" id="dot"></span>
+    <h1>Khanya · Live Power</h1>
+  </header>
+  <p class="sub" id="status">Connecting…</p>
+
+  <div class="banner" id="banner">⚠️ <span id="bannerText"></span></div>
+
+  <div class="gauge">
+    <div><span class="big" id="watts">—</span> <span class="unit">W</span></div>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="unit"><span id="volts">—</span> V · <span id="state">—</span></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="label">Cost so far</div><div class="val">R <span id="cost">—</span></div></div>
+    <div class="card"><div class="label">Balance left</div><div class="val">R <span id="balance">—</span></div></div>
+    <div class="card"><div class="label">Runs out in</div><div class="val" id="runout">—</div></div>
+    <div class="card"><div class="label">Overuse events</div><div class="val" id="overuse">—</div></div>
+  </div>
+
+  <p class="foot" id="wsurl"></p>
+
+  <script>
+    // WebSocket URL: ?ws=wss://your-tunnel.ngrok.io  (falls back to localhost)
+    const params = new URLSearchParams(location.search);
+    const WS_URL = params.get("ws") || "ws://localhost:8765";
+    const THRESHOLD = 2000; // matches the bridge
+
+    const $ = (id) => document.getElementById(id);
+    $("wsurl").textContent = WS_URL;
+
+    function setStatus(text, live) {
+      $("status").textContent = text;
+      $("dot").classList.toggle("live", !!live);
+    }
+
+    function render(r) {
+      $("watts").textContent = r.watts;
+      $("volts").textContent = r.volts;
+      $("state").textContent = r.state;
+      $("cost").textContent = r.cost_rand;
+      $("balance").textContent = r.balance_rand;
+      $("runout").textContent = r.runout_eta;
+      $("overuse").textContent = r.overuse_count;
+
+      const pct = Math.min(100, (r.watts / (THRESHOLD * 1.3)) * 100);
+      const bar = $("bar");
+      bar.style.width = pct + "%";
+      const alert = r.state === "alert";
+      bar.style.background = alert ? "var(--bad)" : (r.watts > THRESHOLD * 0.8 ? "var(--warn)" : "var(--ok)");
+
+      const banner = $("banner");
+      banner.classList.toggle("show", alert);
+      if (alert) $("bannerText").textContent = `Overusing electricity — ${r.watts}W`;
+    }
+
+    function connect() {
+      setStatus("Connecting…", false);
+      const ws = new WebSocket(WS_URL);
+      ws.onopen = () => setStatus("Live", true);
+      ws.onmessage = (e) => { try { render(JSON.parse(e.data)); } catch (_) {} };
+      ws.onclose = () => { setStatus("Disconnected — retrying…", false); setTimeout(connect, 1500); };
+      ws.onerror = () => ws.close();
+    }
+    connect();
+  </script>
+</body>
+</html>

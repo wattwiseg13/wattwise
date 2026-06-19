@@ -13,8 +13,6 @@ METERS: Dict[str, Dict[str, Any]] = {
     "NXM-001-TZN": {
         "meter_id": "NXM-001-TZN",
         "address": "42 Nkowankowa Street, Tzaneen, Limpopo",
-        "lat": -23.8874,
-        "lng": 30.2855,
         "area": "Tzaneen North",
         "municipality": "Greater Tzaneen Municipality",
         "consumer_name": "Casious Mookamedi",
@@ -31,8 +29,6 @@ METERS: Dict[str, Dict[str, Any]] = {
     "NXM-002-TZN": {
         "meter_id": "NXM-002-TZN",
         "address": "18 Modjadji Road, Tzaneen, Limpopo",
-        "lat": -23.8183,
-        "lng": 30.1671,
         "area": "Tzaneen North",
         "municipality": "Greater Tzaneen Municipality",
         "consumer_name": "Lerato Maseko",
@@ -49,8 +45,6 @@ METERS: Dict[str, Dict[str, Any]] = {
     "NXM-003-TZN": {
         "meter_id": "NXM-003-TZN",
         "address": "7 Market Street, Tzaneen, Limpopo",
-        "lat": -23.8336,
-        "lng": 30.1635,
         "area": "Tzaneen CBD",
         "municipality": "Greater Tzaneen Municipality",
         "consumer_name": "Thabo Khumalo",

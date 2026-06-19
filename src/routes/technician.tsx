@@ -11,7 +11,7 @@ import { meters } from "@/mock/meters";
 import { TechnicianJobMap } from "@/components/maps/TechnicianJobMap";
 
 export const Route = createFileRoute("/technician")({
-  head: () => ({ meta: [{ title: "My Jobs · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "My Jobs · WattWise" }] }),
   component: () => (
     <AppLayout title="Field Technician Workspace">
       <Technician />
@@ -40,9 +40,9 @@ function Technician() {
             {resolvedToday.length === 0 && <div className="text-muted-foreground">No jobs resolved yet today.</div>}
             {resolvedToday.map((j) => (
               <div key={j.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                <CheckCircle2 className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[#005EB8] flex-shrink-0" />
                 <div className="flex-1">
-                  <div className="font-mono text-teal-600">{j.meterId}</div>
+                  <div className="font-mono text-[#005EB8]">{j.meterId}</div>
                   <div className="text-muted-foreground">{j.resolutionNote ?? "Resolved"}</div>
                 </div>
                 <div className="text-muted-foreground">{j.resolvedAt && format(new Date(j.resolvedAt), "HH:mm")}</div>
@@ -65,7 +65,7 @@ const pipelineLabels = { assigned: "Assigned", en_route: "En Route", on_site: "O
 function JobCard({ job }: { job: Job }) {
   const setJobStatus = useAlerts((s) => s.setJobStatus);
   const curIndex = pipeline.indexOf(job.status);
-  const sevColor = job.severity === "critical" ? "bg-coral text-white" : "bg-amber text-white";
+  const sevColor = job.severity === "critical" ? "bg-red-500 text-white" : "bg-amber-500 text-white";
 
   return (
     <Card>
@@ -76,7 +76,7 @@ function JobCard({ job }: { job: Job }) {
             <span className="font-mono text-xs text-muted-foreground">{job.id}</span>
           </div>
           <div className="mt-2 text-lg font-semibold">{job.address}</div>
-          <div className="text-xs font-mono text-teal-600 mt-1">{job.meterId}</div>
+          <div className="text-xs font-mono text-[#005EB8] mt-1">{job.meterId}</div>
           {job.notes && <div className="text-xs text-muted-foreground mt-2 italic">"{job.notes}"</div>}
           <div className="text-[11px] text-muted-foreground mt-1">Assigned {formatDistanceToNow(new Date(job.assignedAt), { addSuffix: true })}</div>
         </div>
@@ -93,8 +93,8 @@ function JobCard({ job }: { job: Job }) {
           const done = i <= curIndex;
           return (
             <div key={s} className="flex-1 flex items-center">
-              <div className={`flex-1 h-1.5 rounded-full ${done ? "bg-teal" : "bg-muted"}`} />
-              <div className={`mx-2 text-[10px] uppercase font-medium ${done ? "text-teal-600" : "text-muted-foreground"}`}>
+              <div className={`flex-1 h-1.5 rounded-full ${done ? "bg-[#005EB8]" : "bg-slate-200"}`} />
+              <div className={`mx-2 text-[10px] uppercase font-medium ${done ? "text-[#005EB8]" : "text-muted-foreground"}`}>
                 {pipelineLabels[s]}
               </div>
             </div>
@@ -109,10 +109,40 @@ function ActionBtn({ children, onClick, disabled, primary }: { children: React.R
   return (
     <button onClick={onClick} disabled={disabled}
       className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-        primary ? "bg-teal text-navy hover:bg-teal-600" : "border border-border hover:bg-muted"
+        primary ? "bg-[#005EB8] text-white hover:bg-[#003F8A]" : "border border-slate-200 hover:bg-slate-50"
       } disabled:opacity-40 disabled:cursor-not-allowed`}>
       {children}
     </button>
+  );
+}
+
+function JobMap() {
+  const jobs = useAlerts((s) => s.jobs).filter((j) => j.status !== "resolved");
+  return (
+    <Card>
+      <CardTitle hint="My assigned jobs">Job map</CardTitle>
+      <div className="bg-[#001F5E] rounded-xl relative overflow-hidden" style={{ height: 280 }}>
+        <svg viewBox="0 0 800 280" className="w-full h-full">
+          <pattern id="techstreets" width="80" height="60" patternUnits="userSpaceOnUse">
+            <rect width="80" height="60" fill="#0B1628" />
+            <rect x="2" y="2" width="76" height="56" fill="#112240" rx="2" />
+          </pattern>
+          <rect width="800" height="280" fill="url(#techstreets)" />
+          {jobs.map((j, i) => {
+            const x = 100 + i * 140 + (i % 2) * 30;
+            const y = 80 + (i % 3) * 60;
+            const color = j.severity === "critical" ? "#EF4444" : "#F59E0B";
+            return (
+              <g key={j.id}>
+                <circle cx={x} cy={y} r="14" fill={color} opacity="0.25" />
+                <circle cx={x} cy={y} r="6" fill={color} />
+                <text x={x} y={y + 30} textAnchor="middle" fill="white" fontSize="10" fontFamily="monospace">{j.meterId.split("-")[1]}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    </Card>
   );
 }
 
@@ -159,7 +189,7 @@ function QuickReportForm() {
 
   return (
     <Card className="sticky top-20">
-      <CardTitle hint="On-site"><ClipboardCheck className="w-4 h-4 inline mr-1 text-teal-600" />Quick field report</CardTitle>
+      <CardTitle hint="On-site"><ClipboardCheck className="w-4 h-4 inline mr-1 text-[#005EB8]" />Quick field report</CardTitle>
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">Meter ID</label>
@@ -185,15 +215,13 @@ function QuickReportForm() {
         </div>
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">GPS coordinates</label>
-          <button type="button" onClick={captureLocation} disabled={locating} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted disabled:cursor-wait disabled:opacity-60">
-            {locating ? <LoaderCircle className="w-4 h-4 animate-spin text-teal-600" /> : <MapPin className="w-4 h-4 text-teal-600" />}
-            <span className="font-mono">
-              {locating ? "Capturing location…" : coords ? `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}` : "Tap to capture location"}
-            </span>
+          <button type="button" onClick={() => setCoords("-23.8336, 30.1635")} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted">
+            <MapPin className="w-4 h-4 text-[#005EB8]" />
+            <span className="font-mono">{coords}</span>
           </button>
           {locationError && <div className="mt-1.5 text-[11px] text-coral">{locationError}</div>}
         </div>
-        <button type="submit" className="w-full bg-teal text-navy font-semibold py-2.5 rounded-lg text-sm hover:bg-teal-600">
+        <button type="submit" className="w-full bg-[#005EB8] text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-[#003F8A] transition-colors">
           Submit field report
         </button>
       </form>

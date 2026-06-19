@@ -79,9 +79,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NexMotion Energy Gateway" },
+      { title: "WattWise" },
       { name: "description", content: "Smart electricity monitoring and civic reporting for South African households and municipalities." },
-      { property: "og:title", content: "NexMotion Energy Gateway" },
+      { property: "og:title", content: "WattWise" },
       { property: "og:description", content: "Smart electricity monitoring and civic reporting for South African households and municipalities." },
       { property: "og:type", content: "website" },
     ],
@@ -117,10 +117,25 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleMapsProvider>
-        <Outlet />
-        <Toaster position="top-right" richColors closeButton />
-      </GoogleMapsProvider>
+      <Outlet />
+      <Toaster
+        position="top-right"
+        closeButton
+        toastOptions={{
+          classNames: {
+            toast:
+              "!bg-white !border !border-slate-100 !rounded-xl !shadow-lg !text-slate-800 !font-sans",
+            title: "!text-slate-900 !font-semibold !text-sm",
+            description: "!text-slate-500 !text-xs",
+            success: "!border-l-4 !border-l-[#005EB8]",
+            error: "!border-l-4 !border-l-red-500",
+            info: "!border-l-4 !border-l-[#005EB8]",
+            warning: "!border-l-4 !border-l-amber-500",
+            closeButton:
+              "!bg-white !border-slate-200 !text-slate-400 hover:!text-slate-700",
+          },
+        }}
+      />
     </QueryClientProvider>
   );
 }

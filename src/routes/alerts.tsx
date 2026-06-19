@@ -9,7 +9,7 @@ import { DispatchModal } from "@/components/ui/dispatch-modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 export const Route = createFileRoute("/alerts")({
-  head: () => ({ meta: [{ title: "Alerts · NexMotion" }] }),
+  head: () => ({ meta: [{ title: "Alerts · WattWise" }] }),
   component: () => (
     <AppLayout title="Alerts Centre">
       <AlertsCentre />
@@ -45,7 +45,7 @@ function AlertsCentre() {
             {filters.map((f) => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
-                  filter === f ? "bg-navy text-white" : "bg-muted text-muted-foreground hover:bg-slate-200"
+                  filter === f ? "bg-[#005EB8] text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}>{f}</button>
             ))}
           </div>
@@ -66,15 +66,15 @@ function AlertsCentre() {
         )}
         {filtered.map((a) => {
           const Icon = a.severity === "critical" ? ShieldAlert : a.severity === "warning" ? AlertTriangle : CheckCircle;
-          const border = a.severity === "critical" ? "border-l-coral" : a.severity === "warning" ? "border-l-amber" : "border-l-teal";
-          const color = a.severity === "critical" ? "text-coral" : a.severity === "warning" ? "text-amber-600" : "text-teal-600";
+          const border = a.severity === "critical" ? "border-l-red-500" : a.severity === "warning" ? "border-l-amber-400" : "border-l-[#005EB8]";
+          const color = a.severity === "critical" ? "text-red-500" : a.severity === "warning" ? "text-amber-600" : "text-[#005EB8]";
           return (
             <Card key={a.id} className={`border-l-4 ${border}`}>
               <div className="flex items-start gap-4">
                 <Icon className={`w-5 h-5 mt-0.5 ${color}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-teal-600 text-sm">{a.meterId}</span>
+                    <span className="font-mono text-[#005EB8] text-sm">{a.meterId}</span>
                     <span className="text-xs text-muted-foreground">·</span>
                     <span className="text-sm font-medium">{a.address}</span>
                     <StatusBadge status={a.status} />
@@ -87,7 +87,7 @@ function AlertsCentre() {
                     ) : (
                       <button onClick={() => setDispatchAlert(a)} className="text-amber-600 font-semibold hover:underline">Unassigned — dispatch now</button>
                     )}
-                    <Link to="/meter/$meterId" params={{ meterId: a.meterId }} className="text-teal-600 hover:underline">View meter →</Link>
+                    <Link to="/meter/$meterId" params={{ meterId: a.meterId }} className="text-[#005EB8] hover:underline">View meter →</Link>
                   </div>
                 </div>
               </div>
