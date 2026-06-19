@@ -117,25 +117,27 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster
-        position="top-right"
-        closeButton
-        toastOptions={{
-          classNames: {
-            toast:
-              "!bg-white !border !border-slate-100 !rounded-xl !shadow-lg !text-slate-800 !font-sans",
-            title: "!text-slate-900 !font-semibold !text-sm",
-            description: "!text-slate-500 !text-xs",
-            success: "!border-l-4 !border-l-[#005EB8]",
-            error: "!border-l-4 !border-l-red-500",
-            info: "!border-l-4 !border-l-[#005EB8]",
-            warning: "!border-l-4 !border-l-amber-500",
-            closeButton:
-              "!bg-white !border-slate-200 !text-slate-400 hover:!text-slate-700",
-          },
-        }}
-      />
+      <GoogleMapsProvider>
+        <Outlet />
+        <Toaster
+          position="top-right"
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast:
+                "!bg-white !border !border-slate-100 !rounded-xl !shadow-lg !text-slate-800 !font-sans",
+              title: "!text-slate-900 !font-semibold !text-sm",
+              description: "!text-slate-500 !text-xs",
+              success: "!border-l-4 !border-l-[#005EB8]",
+              error: "!border-l-4 !border-l-red-500",
+              info: "!border-l-4 !border-l-[#005EB8]",
+              warning: "!border-l-4 !border-l-amber-500",
+              closeButton:
+                "!bg-white !border-slate-200 !text-slate-400 hover:!text-slate-700",
+            },
+          }}
+        />
+      </GoogleMapsProvider>
     </QueryClientProvider>
   );
 }

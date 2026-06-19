@@ -54,7 +54,7 @@ function Municipality() {
         <KPI label="Revenue at risk" value={formatZAR(revenueAtRisk)} icon={DollarSign} accent="text-red-600" />
       </div>
 
-      <NetworkMap />
+      <MeterNetworkMap meters={meters} />
 
       <div ref={meterSectionRef}>
         <MeterTable
@@ -92,60 +92,6 @@ function KPI({ label, value, icon: Icon, accent = "", sub, onAction }: {
   );
 }
 
-function NetworkMap() {
-  const [hover, setHover] = useState<typeof meters[number] | null>(null);
-  const colorFor = (s: string) =>
-    s === "critical" ? "#EF4444" : s === "warning" ? "#F59E0B" : s === "offline" ? "#94A3B8" : "#22C55E";
-
-  return (
-    <Card>
-      <CardTitle hint="Connect Google Maps API key to enable live map">Network map — GPS meter locations</CardTitle>
-      <div className="relative bg-[#001F5E] rounded-xl overflow-hidden" style={{ height: "calc(100dvh - 16rem)", minHeight: 300 }}>
-        <svg viewBox="0 0 800 600" className="w-full h-full" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <pattern id="streets" width="80" height="60" patternUnits="userSpaceOnUse">
-              <rect width="80" height="60" fill="#0B1628" />
-              <rect x="2" y="2" width="76" height="56" fill="#112240" rx="2" />
-            </pattern>
-          </defs>
-          <rect width="800" height="600" fill="url(#streets)" />
-          {/* Roads */}
-          <g stroke="#1A3458" strokeWidth="3">
-            <line x1="0" y1="160" x2="800" y2="160" />
-            <line x1="0" y1="400" x2="800" y2="400" />
-            <line x1="200" y1="0" x2="200" y2="600" />
-            <line x1="500" y1="0" x2="500" y2="600" />
-          </g>
-          {meters.map((m, i) => {
-            const x = 60 + (i % 8) * 95 + (Math.sin(i) * 10);
-            const y = 60 + Math.floor(i / 8) * 130 + (Math.cos(i) * 10);
-            return (
-              <g key={m.id}
-                onMouseEnter={() => setHover(m)} onMouseLeave={() => setHover(null)}
-                className="cursor-pointer">
-                <circle cx={x} cy={y} r="8" fill={colorFor(m.status)} opacity="0.3" />
-                <circle cx={x} cy={y} r="4" fill={colorFor(m.status)} />
-              </g>
-            );
-          })}
-        </svg>
-        {/* Legend */}
-        <div className="absolute bottom-3 left-3 bg-[#001F5E]/90 backdrop-blur rounded-lg px-3 py-2 flex gap-3 text-[11px] text-white border border-white/10">
-          {[["Normal","#22C55E"],["Warning","#F59E0B"],["Critical","#EF4444"],["Offline","#94A3B8"]].map(([l,c])=>(
-            <div key={l} className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{background:c}}/>{l}</div>
-          ))}
-        </div>
-        {hover && (
-          <div className="absolute top-3 right-3 bg-[#001F5E]/95 backdrop-blur rounded-lg p-3 text-xs text-white max-w-xs border border-white/10">
-            <div className="font-mono text-blue-400">{hover.id}</div>
-            <div className="mt-1">{hover.address}</div>
-            <div className="mt-1 text-slate-200">Draw: {Math.round(hover.currentDraw)} W · {formatDistanceToNow(new Date(hover.lastSeenAt), { addSuffix: true })}</div>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
 
 function MeterTable({ search, setSearch, statusFilter, setStatusFilter }: {
   search: string;

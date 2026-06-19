@@ -215,11 +215,11 @@ function QuickReportForm() {
         </div>
         <div>
           <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-1">GPS coordinates</label>
-          <button type="button" onClick={() => setCoords("-23.8336, 30.1635")} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted">
-            <MapPin className="w-4 h-4 text-[#005EB8]" />
-            <span className="font-mono">{coords}</span>
+          <button type="button" onClick={captureLocation} disabled={locating} className="w-full flex items-center gap-2 border border-input rounded-lg px-3 py-2 text-xs text-left hover:bg-muted disabled:opacity-50">
+            {locating ? <LoaderCircle className="w-4 h-4 text-[#005EB8] animate-spin" /> : <MapPin className="w-4 h-4 text-[#005EB8]" />}
+            <span className="font-mono">{coords ? `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}` : locating ? "Capturing..." : "Tap to capture GPS"}</span>
           </button>
-          {locationError && <div className="mt-1.5 text-[11px] text-coral">{locationError}</div>}
+          {locationError && <div className="mt-1.5 text-[11px] text-red-500">{locationError}</div>}
         </div>
         <button type="submit" className="w-full bg-[#005EB8] text-white font-semibold py-2.5 rounded-lg text-sm hover:bg-[#003F8A] transition-colors">
           Submit field report
