@@ -17,7 +17,7 @@ const int LED_GREEN = 3;    // normal LED (steady while usage is OK)
 const int BUTTON_PIN = 4;   // physical switch-off button (other side to GND)
 
 const unsigned long SEND_INTERVAL_MS = 1000;   // one reading per second
-const int WATTS_THRESHOLD = 2000;              // must match Python's threshold
+ const int WATTS_THRESHOLD = 1500;             // must match Python's threshold
 const int WATTS_MAX = 2600;                    // pot fully turned = this many watts
 
 bool streaming = false;
