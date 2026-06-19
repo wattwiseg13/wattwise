@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/card-basic";
 import type { Job, Meter } from "@/types";
 import { GoogleMapFallback, useGoogleMapsConfig } from "./GoogleMapsProvider";
-
-const Tzaneen = { lat: -23.8336, lng: 30.1635 };
+import { SOWETO_GENERAL, SOWETO_CAMPUS_YWCA } from "@/lib/locations";
 
 interface LocatedJob {
   job: Job;
@@ -18,23 +17,36 @@ function FitMapToJobs({ jobs }: { jobs: LocatedJob[] }) {
   useEffect(() => {
     if (!map || jobs.length === 0) return;
 
-    if (jobs.length === 1) {
-      map.setCenter({ lat: jobs[0].meter.lat, lng: jobs[0].meter.lng });
-      map.setZoom(15);
-      return;
-    }
+    const timer = setTimeout(() => {
+      const latitudes = jobs.map(({ meter }) => meter.lat);
+      const longitudes = jobs.map(({ meter }) => meter.lng);
+      
+      const bounds = new window.google.maps.LatLngBounds(
+        { lat: Math.min(...latitudes), lng: Math.min(...longitudes) }, // SW
+        { lat: Math.max(...latitudes), lng: Math.max(...longitudes) }  // NE
+      );
+      
+      // 1. Smoothly pan to the center of the pins
+      map.panTo(bounds.getCenter());
+      
+      // 2. Step the zoom smoothly to simulate a fly-in effect
+      let currentZoom = map.getZoom() || 11;
+      const targetZoom = 15;
+      
+      const zoomInterval = setInterval(() => {
+        if (currentZoom >= targetZoom) {
+          clearInterval(zoomInterval);
+          // Final exact fit once we're close enough that it won't snap
+          map.panToBounds(bounds, 56);
+          return;
+        }
+        currentZoom += 1;
+        map.setZoom(currentZoom);
+      }, 250);
+      
+    }, 800);
 
-    const latitudes = jobs.map(({ meter }) => meter.lat);
-    const longitudes = jobs.map(({ meter }) => meter.lng);
-    map.fitBounds(
-      {
-        north: Math.max(...latitudes),
-        south: Math.min(...latitudes),
-        east: Math.max(...longitudes),
-        west: Math.min(...longitudes),
-      },
-      56,
-    );
+    return () => clearTimeout(timer);
   }, [jobs, map]);
 
   return null;
@@ -77,8 +89,8 @@ export function TechnicianJobMap({ jobs, meters }: { jobs: Job[]; meters: Meter[
           <Map
             className="h-full w-full"
             mapId={mapId}
-            defaultCenter={Tzaneen}
-            defaultZoom={12}
+            defaultCenter={SOWETO_GENERAL}
+            defaultZoom={11}
             gestureHandling="greedy"
             disableDefaultUI
             zoomControl

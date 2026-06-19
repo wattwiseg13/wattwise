@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { Card, CardTitle } from "@/components/ui/card-basic";
 import type { Meter, MeterStatus } from "@/types";
 import { GoogleMapFallback, useGoogleMapsConfig } from "./GoogleMapsProvider";
-
-const Tzaneen = { lat: -23.8336, lng: 30.1635 };
+import { SOWETO_GENERAL, SOWETO_CAMPUS_YWCA } from "@/lib/locations";
 
 const statusColors: Record<MeterStatus, string> = {
   normal: "#00C9A7",
@@ -22,23 +21,36 @@ function FitMapToMeters({ meters }: { meters: Meter[] }) {
   useEffect(() => {
     if (!map || meters.length === 0) return;
 
-    if (meters.length === 1) {
-      map.setCenter({ lat: meters[0].lat, lng: meters[0].lng });
-      map.setZoom(15);
-      return;
-    }
+    const timer = setTimeout(() => {
+      const latitudes = meters.map((meter) => meter.lat);
+      const longitudes = meters.map((meter) => meter.lng);
+      
+      const bounds = new window.google.maps.LatLngBounds(
+        { lat: Math.min(...latitudes), lng: Math.min(...longitudes) }, // SW
+        { lat: Math.max(...latitudes), lng: Math.max(...longitudes) }  // NE
+      );
+      
+      // 1. Smoothly pan to the center of the pins
+      map.panTo(bounds.getCenter());
+      
+      // 2. Step the zoom smoothly to simulate a fly-in effect
+      let currentZoom = map.getZoom() || 11;
+      const targetZoom = 15;
+      
+      const zoomInterval = setInterval(() => {
+        if (currentZoom >= targetZoom) {
+          clearInterval(zoomInterval);
+          // Final exact fit once we're close enough that it won't snap
+          map.panToBounds(bounds, 48);
+          return;
+        }
+        currentZoom += 1;
+        map.setZoom(currentZoom);
+      }, 250);
+      
+    }, 800);
 
-    const latitudes = meters.map((meter) => meter.lat);
-    const longitudes = meters.map((meter) => meter.lng);
-    map.fitBounds(
-      {
-        north: Math.max(...latitudes),
-        south: Math.min(...latitudes),
-        east: Math.max(...longitudes),
-        west: Math.min(...longitudes),
-      },
-      48,
-    );
+    return () => clearTimeout(timer);
   }, [map, meters]);
 
   return null;
@@ -70,8 +82,8 @@ export function MeterNetworkMap({ meters }: { meters: Meter[] }) {
           <Map
             className="h-full w-full"
             mapId={mapId}
-            defaultCenter={Tzaneen}
-            defaultZoom={12}
+            defaultCenter={SOWETO_GENERAL}
+            defaultZoom={11}
             gestureHandling="greedy"
             disableDefaultUI
             zoomControl
