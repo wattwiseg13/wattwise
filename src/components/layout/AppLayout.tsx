@@ -146,9 +146,13 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
         {/* Brand */}
         <div className="px-5 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#005EB8] grid place-items-center">
-              <Zap className="w-4 h-4 text-white" />
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-[#EBF5FF] grid place-items-center">
+  <img
+    src={wattwiseLogo}
+    alt="WattWise"
+    className="w-7 h-7 object-contain"
+  />
+</div>
             <div>
               <div className="text-sm font-bold text-slate-900 tracking-tight">WattWise</div>
               <div className="text-[10px] uppercase tracking-widest text-slate-400">Energy Gateway</div>
