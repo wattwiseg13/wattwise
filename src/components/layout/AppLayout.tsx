@@ -1,9 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Wrench, Bell, Smartphone, Settings, FileText,
-  LogOut, Home, Menu, X, ShieldAlert, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
+  LogOut, Zap, Home, Menu, X, ShieldAlert, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
-import wattwiseLogo from "@/assets/wattwise-logo.svg";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useLiveData } from "@/store/liveDataStore";
@@ -146,13 +145,9 @@ export function AppLayout({ children, title }: { children: ReactNode; title: str
         {/* Brand */}
         <div className="px-5 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#EBF5FF] grid place-items-center">
-  <img
-    src={wattwiseLogo}
-    alt="WattWise"
-    className="w-7 h-7 object-contain"
-  />
-</div>
+            <div className="w-8 h-8 rounded-lg bg-[#005EB8] grid place-items-center">
+              <Zap className="w-4 h-4 text-white" />
+            </div>
             <div>
               <div className="text-sm font-bold text-slate-900 tracking-tight">WattWise</div>
               <div className="text-[10px] uppercase tracking-widest text-slate-400">Energy Gateway</div>
