@@ -4,7 +4,6 @@ import { Zap, Shield, Eye, TrendingDown, ArrowRight, CheckCircle2, Phone, BarCha
 import heroBg from "@/assets/hero-bg.png";
 import partner1 from "@/assets/partner1.png";
 import partner2 from "@/assets/partner2.png";
-import partner3 from "@/assets/partner3.png";
 import partner4 from "@/assets/partner4.png";
 
 export const Route = createFileRoute("/")({
@@ -120,7 +119,7 @@ function Hero() {
 }
 
 /* ─── Partners ticker ────────────────────────────────────── */
-const PARTNERS = [partner1, partner2, partner3, partner4];
+const PARTNERS = [partner1, partner2, partner4];
 
 function Partners() {
   // 6× copies so first half (3 sets) always exceeds the widest viewport.
