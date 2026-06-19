@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Home, Building2, Wrench, ChevronRight } from "lucide-react";
-import wattwiseLogo from "@/assets/wattwise-logo.svg";
+import { Home, Building2, Wrench, Zap, ChevronRight } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import type { Role } from "@/types";
 
@@ -38,13 +37,9 @@ function LoginPage() {
 
         {/* Blue top stripe */}
         <div className="bg-[#003F8A] px-8 py-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white grid place-items-center">
-  <img
-    src={wattwiseLogo}
-    alt="WattWise"
-    className="w-8 h-8 object-contain"
-  />
-</div>
+          <div className="w-9 h-9 rounded-xl bg-white/10 grid place-items-center">
+            <Zap className="w-5 h-5 text-white" />
+          </div>
           <div>
             <div className="text-white font-bold text-lg leading-tight">WattWise</div>
             <div className="text-blue-200 text-[11px] uppercase tracking-widest leading-tight">Energy Gateway</div>
