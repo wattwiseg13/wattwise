@@ -19,14 +19,24 @@ from bridge.backend_client import API_URL, PERSIST_TO_BACKEND, post_reading_to_b
 
 
 # --- Config ---
+# --- Config ---
 PORT = os.environ.get("SERIAL_PORT", "COM3")
-BAUD = int(os.environ.get("BAUD", "9600"))
-MAX_SECONDS = int(os.environ.get("MAX_SECONDS", "180"))
+BAUD = int(os.environ.get("BAUD", "115200"))
+
+# 0 means "run until Ctrl+C / STOP / OFF".
+MAX_SECONDS = int(os.environ.get("MAX_SECONDS", "0"))
+
 TICK_SECONDS = int(os.environ.get("TICK_SECONDS", "15"))
 WATTS_THRESHOLD = int(os.environ.get("WATTS_THRESHOLD", "1500"))
 DEVICE_LABEL = os.environ.get("DEVICE_LABEL", "Kitchen")
 DATA_DIR = os.environ.get("DATA_DIR", "bridge/data")
 
+# Live data + heuristics
+WS_HOST = os.environ.get("WS_HOST", "0.0.0.0")
+WS_PORT = int(os.environ.get("WS_PORT", "8765"))
+WS_PUBLIC_URL = os.environ.get("WS_PUBLIC_URL", f"ws://127.0.0.1:{WS_PORT}")
+RATE_PER_KWH = float(os.environ.get("RATE_PER_KWH", "3.90"))
+STARTING_BALANCE = float(os.environ.get("STARTING_BALANCE", "100.0"))
 # Live data + heuristics
 WS_HOST = os.environ.get("WS_HOST", "localhost")
 WS_PORT = int(os.environ.get("WS_PORT", "8765"))
@@ -70,9 +80,17 @@ def run():
     server = LiveServer(WS_HOST, WS_PORT)
     server.start()
 
-    print(f"Live data on ws://{WS_HOST}:{WS_PORT}")
+    print("=" * 72)
+    print("WattWise Arduino Bridge")
+    print("=" * 72)
+    print(f"Serial port: {PORT}")
+    print(f"Baud rate: {BAUD}")
+    print(f"WebSocket bind: ws://{WS_HOST}:{WS_PORT}")
+    print(f"Frontend should connect to: {WS_PUBLIC_URL}")
     print(f"FastAPI persistence: {'enabled' if PERSIST_TO_BACKEND else 'disabled'}")
     print(f"FastAPI ingest URL: {API_URL}")
+    print(f"Run duration: {'until stopped' if MAX_SECONDS <= 0 else f'{MAX_SECONDS}s'}")
+    print("=" * 72)
 
     time.sleep(2)  # let the UNO reset after the port opens
     ser.reset_input_buffer()
@@ -96,9 +114,9 @@ def run():
         while True:
             elapsed = time.monotonic() - start
 
-            if elapsed >= MAX_SECONDS:
+            if MAX_SECONDS > 0 and elapsed >= MAX_SECONDS:
                 break
-
+                
             if elapsed >= next_tick:
                 print(f"{format_tick(int(elapsed))}...")
                 next_tick += TICK_SECONDS
@@ -127,11 +145,26 @@ def run():
                 print(f"  --> Switched OFF {DEVICE_LABEL}. Appliance cut.")
                 break
 
-            raw = ser.readline().decode("utf-8", errors="replace")
-            rec = parse_reading(raw, now_iso())
+           try:
+    raw_bytes = ser.readline()
+except serial.SerialException as error:
+    print(f"  !! Serial read failed: {error}")
+    time.sleep(0.2)
+    continue
 
-            if rec is None:
-                continue
+if not raw_bytes:
+    # Short serial timeout means no data is normal.
+    # Sleep very briefly to avoid a busy CPU loop.
+    time.sleep(0.005)
+    continue
+
+raw = raw_bytes.decode("utf-8", errors="replace")
+rec = parse_reading(raw, now_iso())
+
+if rec is None:
+    continue
+
+reading_count += 1
 
             storage.write(rec)
 
@@ -176,6 +209,8 @@ def run():
 
             if backend_result["ok"] and backend_warning_printed:
                 backend_warning_printed = False
+                reading_count = 0
+                last_status_log = time.monotonic()
                 print("  --> Backend persistence recovered.")
 
             if overuse:
