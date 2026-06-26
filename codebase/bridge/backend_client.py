@@ -1,4 +1,7 @@
 import os
+import queue
+import threading
+import time
 from typing import Any, Dict
 
 import requests
@@ -11,14 +14,27 @@ API_URL = os.environ.get(
 
 METER_ID = os.environ.get("METER_ID", "NXM-001-TZN")
 
+# Demo-safe default:
+# Live WebSocket should work even if FastAPI/Postgres is not running.
 PERSIST_TO_BACKEND = os.environ.get(
     "PERSIST_TO_BACKEND",
-    "true",
+    "false",
 ).lower() not in {"0", "false", "no", "off"}
 
 REQUEST_TIMEOUT_SECONDS = float(
-    os.environ.get("REQUEST_TIMEOUT_SECONDS", "1.5")
+    os.environ.get("REQUEST_TIMEOUT_SECONDS", "0.5")
 )
+
+BACKEND_QUEUE_MAXSIZE = int(
+    os.environ.get("BACKEND_QUEUE_MAXSIZE", "5000")
+)
+
+_BACKEND_QUEUE: queue.Queue[Dict[str, Any]] = queue.Queue(maxsize=BACKEND_QUEUE_MAXSIZE)
+_WORKER_STARTED = False
+_WORKER_LOCK = threading.Lock()
+_SESSION = requests.Session()
+
+_last_failure_log = 0.0
 
 
 def build_backend_payload(record: Dict[str, Any], source: str = "ARDUINO_UNO_BRIDGE") -> Dict[str, Any]:
@@ -54,47 +70,106 @@ def build_backend_payload(record: Dict[str, Any], source: str = "ARDUINO_UNO_BRI
     }
 
 
+def _log_backend_failure(message: str):
+    """
+    Rate-limit backend failure logs so the bridge console does not get spammed.
+    """
+    global _last_failure_log
+
+    now = time.monotonic()
+
+    if now - _last_failure_log >= 10:
+        _last_failure_log = now
+        print(f"  !! Backend persistence warning: {message}")
+
+
+def _backend_worker():
+    """
+    Background worker.
+
+    This prevents FastAPI/Postgres from slowing down the live Arduino/WebSocket loop.
+    """
+    while True:
+        payload = _BACKEND_QUEUE.get()
+
+        try:
+            response = _SESSION.post(
+                API_URL,
+                json=payload,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+
+            if not response.ok:
+                _log_backend_failure(
+                    f"POST failed with HTTP {response.status_code}: {response.text[:200]}"
+                )
+
+        except requests.RequestException as error:
+            _log_backend_failure(str(error))
+
+        finally:
+            _BACKEND_QUEUE.task_done()
+
+
+def _ensure_worker_started():
+    global _WORKER_STARTED
+
+    if _WORKER_STARTED:
+        return
+
+    with _WORKER_LOCK:
+        if _WORKER_STARTED:
+            return
+
+        thread = threading.Thread(
+            target=_backend_worker,
+            name="backend-persistence-worker",
+            daemon=True,
+        )
+        thread.start()
+        _WORKER_STARTED = True
+
+
 def post_reading_to_backend(
     record: Dict[str, Any],
     source: str = "ARDUINO_UNO_BRIDGE",
 ) -> Dict[str, Any]:
     """
-    Sends a bridge reading to FastAPI.
+    Queue a bridge reading for FastAPI persistence.
 
-    This is intentionally fail-safe:
-    - If FastAPI is down, the live WebSocket demo still continues.
-    - If persistence is disabled, it quietly skips.
+    Important:
+    This function is intentionally non-blocking for demo reliability.
+    The live dashboard should keep working even if FastAPI/Postgres is down.
     """
 
     if not PERSIST_TO_BACKEND:
         return {
             "ok": True,
             "skipped": True,
+            "queued": False,
             "message": "Backend persistence disabled",
         }
 
     payload = build_backend_payload(record, source=source)
+    _ensure_worker_started()
 
     try:
-        response = requests.post(
-            API_URL,
-            json=payload,
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-
-        return {
-            "ok": response.ok,
-            "skipped": False,
-            "status_code": response.status_code,
-            "message": response.text[:300],
-            "payload": payload,
-        }
-
-    except requests.RequestException as error:
+        _BACKEND_QUEUE.put_nowait(payload)
+    except queue.Full:
         return {
             "ok": False,
             "skipped": False,
-            "status_code": None,
-            "message": str(error),
+            "queued": False,
+            "dropped": True,
+            "message": "Backend persistence queue full; reading dropped",
             "payload": payload,
         }
+
+    return {
+        "ok": True,
+        "skipped": False,
+        "queued": True,
+        "message": "Queued for backend persistence",
+        "payload": payload,
+        "queue_size": _BACKEND_QUEUE.qsize(),
+    }
