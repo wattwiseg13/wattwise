@@ -1,27 +1,63 @@
 import json
 
-REQUIRED_KEYS = ("device_id", "ts", "volts", "watts", "state")
+
+VALID_STATES = {"normal", "alert", "off"}
 
 
 def parse_reading(line, ts_iso):
-    line = line.strip()
+    """
+    Parse one JSON line from the Arduino.
+
+    Expected Arduino shape:
+    {
+      "device_id": "uno1",
+      "ts": 1234,
+      "volts": 230,
+      "watts": 850,
+      "state": "normal"
+    }
+
+    This parser is intentionally defensive for demo reliability.
+    Bad lines return None instead of crashing the bridge.
+    """
+    if isinstance(line, bytes):
+        line = line.decode("utf-8", errors="replace")
+
+    line = str(line).strip()
+
     if not line:
         return None
+
     try:
         data = json.loads(line)
     except (ValueError, TypeError):
         return None
+
     if not isinstance(data, dict):
         return None
-    if any(k not in data for k in REQUIRED_KEYS):
+
+    try:
+        device_id = str(data.get("device_id") or data.get("meter_id") or "unknown")
+        uptime_ms = int(data.get("ts", data.get("uptime_ms", 0)))
+        volts = float(data.get("volts", data.get("voltage", 230)))
+        watts = float(data.get("watts", 0))
+        state = str(data.get("state", "normal")).lower().strip()
+    except (TypeError, ValueError):
         return None
+
+    if watts < 0:
+        return None
+
+    if state not in VALID_STATES:
+        state = "normal"
+
     return {
-        "device_id": data["device_id"],
+        "device_id": device_id,
         "ts_iso": ts_iso,
-        "uptime_ms": data["ts"],
-        "volts": data["volts"],
-        "watts": data["watts"],
-        "state": data["state"],
+        "uptime_ms": uptime_ms,
+        "volts": volts,
+        "watts": watts,
+        "state": state,
     }
 
 
@@ -34,7 +70,10 @@ def format_tick(elapsed_seconds):
 
 def is_overuse(record, threshold_watts):
     """True when a reading's power draw exceeds the overuse threshold."""
-    return record["watts"] > threshold_watts
+    try:
+        return float(record["watts"]) > float(threshold_watts)
+    except (KeyError, TypeError, ValueError):
+        return False
 
 
 def format_alert(label, watts):
