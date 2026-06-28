@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover - non-Windows fallback
 
 from bridge.protocol import parse_reading, format_tick, is_overuse, format_alert
 from bridge.storage import Storage
-from bridge.serial_io import open_port, describe_ports
+from bridge.serial_io import open_port, describe_ports, resolve_port
 from bridge.predict import accumulate_kwh, build_live_message
 from bridge.server import LiveServer
 from bridge.backend_client import API_URL, PERSIST_TO_BACKEND, post_reading_to_backend
@@ -20,10 +20,10 @@ from bridge.backend_client import API_URL, PERSIST_TO_BACKEND, post_reading_to_b
 
 # --- Config ---
 # --- Config ---
-PORT = os.environ.get("SERIAL_PORT", "COM3")
+PORT = os.environ.get("SERIAL_PORT")
 BAUD = int(os.environ.get("BAUD", "115200"))
 
-# 0 means "run until Ctrl+C / STOP / OFF".
+# 0 means run until Ctrl+C / STOP / OFF.
 MAX_SECONDS = int(os.environ.get("MAX_SECONDS", "0"))
 
 TICK_SECONDS = int(os.environ.get("TICK_SECONDS", "15"))
@@ -69,11 +69,20 @@ def off_key_pressed():
 
 def run():
     try:
-        ser = open_port(PORT, BAUD)
-    except serial.SerialException:
-        print(f"Could not open port '{PORT}'. Available ports:")
-        print(describe_ports())
-        sys.exit(1)
+    resolved_port = resolve_port(PORT)
+    ser = open_port(resolved_port, BAUD)
+    PORT = resolved_port
+except serial.SerialException as error:
+    print("Could not open Arduino serial port.")
+    print(error)
+    print("Available ports:")
+    print(describe_ports())
+    print("")
+    print("Fix:")
+    print("  Set SERIAL_PORT manually, for example:")
+    print("  Windows PowerShell: $env:SERIAL_PORT='COM4'")
+    print("  Linux/macOS:        export SERIAL_PORT=/dev/ttyACM0")
+    sys.exit(1)
 
     storage = Storage(DATA_DIR)
 
